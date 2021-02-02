@@ -11,6 +11,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
 import androidx.annotation.Keep;
@@ -24,6 +25,8 @@ import android.view.animation.Interpolator;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.BubbleActivity;
+
+import java.util.ArrayList;
 
 public class CropAreaView extends View {
 
@@ -45,6 +48,12 @@ public class CropAreaView extends View {
     private RectF leftEdge = new RectF();
     private RectF bottomEdge = new RectF();
     private RectF rightEdge = new RectF();
+
+    private Rect exclusionTopLeft = new Rect();
+    private Rect exclusionTopRight = new Rect();
+    private Rect exclusionBottomLeft = new Rect();
+    private Rect exclusionBottomRight = new Rect();
+    private ArrayList<Rect> exclusionRects = new ArrayList<>();
 
     private float lockAspectRatio;
 
@@ -137,6 +146,11 @@ public class CropAreaView extends View {
 
         bitmapPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
         bitmapPaint.setColor(0xffffffff);
+
+        exclusionRects.add(exclusionTopLeft);
+        exclusionRects.add(exclusionTopRight);
+        exclusionRects.add(exclusionBottomLeft);
+        exclusionRects.add(exclusionBottomRight);
     }
 
     public void setIsVideo(boolean value) {
@@ -199,12 +213,14 @@ public class CropAreaView extends View {
         calculateRect(actualRect, aspectRatio);
         updateTouchAreas();
         invalidate();
+        updateExclusionRects();
     }
 
     public void setActualRect(RectF rect) {
         actualRect.set(rect);
         updateTouchAreas();
         invalidate();
+        updateExclusionRects();
     }
 
     @Override
@@ -355,6 +371,20 @@ public class CropAreaView extends View {
         leftEdge.set(actualRect.left - touchPadding, actualRect.top + touchPadding, actualRect.left + touchPadding, actualRect.bottom - touchPadding);
         rightEdge.set(actualRect.right - touchPadding, actualRect.top + touchPadding, actualRect.right + touchPadding, actualRect.bottom - touchPadding);
         bottomEdge.set(actualRect.left + touchPadding, actualRect.bottom - touchPadding, actualRect.right - touchPadding, actualRect.bottom + touchPadding);
+    }
+
+    private void updateExclusionRects() {
+        if (!isDragging && Build.VERSION.SDK_INT >= 29) {
+            int exclusionVerticalPadding = AndroidUtilities.dp(25);
+            int exclusionHorizontalPadding = AndroidUtilities.dp(48);
+
+            exclusionTopLeft.set((int) actualRect.left - exclusionHorizontalPadding, (int) actualRect.top - exclusionVerticalPadding, (int) actualRect.left + exclusionHorizontalPadding, (int) actualRect.top + exclusionVerticalPadding);
+            exclusionTopRight.set((int) actualRect.right - exclusionHorizontalPadding, (int) actualRect.top - exclusionVerticalPadding, (int) actualRect.right + exclusionHorizontalPadding, (int) actualRect.top + exclusionVerticalPadding);
+            exclusionBottomLeft.set((int) actualRect.left - exclusionHorizontalPadding, (int) actualRect.bottom - exclusionVerticalPadding, (int) actualRect.left + exclusionHorizontalPadding, (int) actualRect.bottom + exclusionVerticalPadding);
+            exclusionBottomRight.set((int) actualRect.right - exclusionHorizontalPadding, (int) actualRect.bottom - exclusionVerticalPadding, (int) actualRect.right + exclusionHorizontalPadding, (int) actualRect.bottom + exclusionVerticalPadding);
+
+            setSystemGestureExclusionRects(exclusionRects);
+        }
     }
 
     public float getLockAspectRatio() {
