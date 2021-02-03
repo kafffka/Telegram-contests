@@ -9676,10 +9676,16 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (showPaint) {
                         if (paintButton.getVisibility() != View.VISIBLE) {
                             paintButton.setVisibility(View.VISIBLE);
-                            paintButton.setAlpha(0f);
                             paintButton.setEnabled(true);
-                            paintButton.animate().setListener(null).cancel();
-                            paintButton.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(120).start();
+                            if (bottomButtonsLayout.getAlpha() == 1) {
+                                paintButton.setAlpha(0f);
+                                paintButton.animate().setListener(null).cancel();
+                                paintButton.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(120).start();
+                            } else {
+                                paintButton.setAlpha(1f);
+                                paintButton.setScaleX(1f);
+                                paintButton.setScaleY(1f);
+                            }
                         }
                     } else {
                         if (paintButton.getVisibility() != View.INVISIBLE) {
