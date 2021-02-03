@@ -203,6 +203,7 @@ public class CropAreaView extends View {
         }
 
         setActualRect(aspectRatio);
+        updateExclusionRects();
     }
 
     public void setFreeform(boolean fform) {
@@ -213,14 +214,12 @@ public class CropAreaView extends View {
         calculateRect(actualRect, aspectRatio);
         updateTouchAreas();
         invalidate();
-        updateExclusionRects();
     }
 
     public void setActualRect(RectF rect) {
         actualRect.set(rect);
         updateTouchAreas();
         invalidate();
-        updateExclusionRects();
     }
 
     @Override
@@ -374,7 +373,7 @@ public class CropAreaView extends View {
     }
 
     private void updateExclusionRects() {
-        if (!isDragging && Build.VERSION.SDK_INT >= 29) {
+        if (Build.VERSION.SDK_INT >= 29) {
             int exclusionVerticalPadding = AndroidUtilities.dp(25);
             int exclusionHorizontalPadding = AndroidUtilities.dp(48);
 
@@ -644,6 +643,7 @@ public class CropAreaView extends View {
             if (listener != null) {
                 listener.onAreaChangeEnded();
             }
+            updateExclusionRects();
 
             return true;
         } else if (action == MotionEvent.ACTION_MOVE) {
