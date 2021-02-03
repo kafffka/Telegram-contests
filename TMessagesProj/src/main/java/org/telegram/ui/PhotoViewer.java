@@ -9673,31 +9673,19 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     allowShare = true;
                     menuItem.showSubItem(gallery_menu_save);
                     boolean showPaint = (newMessageObject.isPhoto() || newMessageObject.canPreviewDocument()) && canSendMediaToParentChatActivity();
-                    if (showPaint) {
-                        if (paintButton.getVisibility() != View.VISIBLE) {
+                    boolean isPaintVisibleNow = paintButton.getVisibility() == View.VISIBLE;
+                    paintButton.setEnabled(showPaint);
+
+                    if (!isVideo && isPaintVisibleNow != showPaint) {
+                        paintButton.animate().setListener(null).cancel();
+                        if (showPaint) {
                             paintButton.setVisibility(View.VISIBLE);
-                            paintButton.setEnabled(true);
-                            if (bottomButtonsLayout.getAlpha() == 1) {
-                                paintButton.setAlpha(0f);
-                                paintButton.animate().setListener(null).cancel();
-                                paintButton.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(120).start();
-                            } else {
-                                paintButton.setAlpha(1f);
-                                paintButton.setScaleX(1f);
-                                paintButton.setScaleY(1f);
+                        }
+                        paintButton.animate().alpha(showPaint ? 1f : 0f).setInterpolator(new LinearInterpolator()).setDuration(100).withEndAction(() -> {
+                            if (!showPaint) {
+                                paintButton.setVisibility(View.GONE);
                             }
-                        }
-                    } else {
-                        if (paintButton.getVisibility() != View.INVISIBLE) {
-                            paintButton.setEnabled(false);
-                            paintButton.animate().setListener(null).cancel();
-                            paintButton.animate().alpha(0.0f).scaleX(0.0f).scaleY(0.0f).setDuration(120).setListener(new AnimatorListenerAdapter() {
-                                @Override
-                                public void onAnimationEnd(Animator animation) {
-                                    paintButton.setVisibility(View.INVISIBLE);
-                                }
-                            }).start();
-                        }
+                        }).start();
                     }
                     bottomButtonsLayout.setVisibility(!videoPlayerControlVisible ? View.VISIBLE : View.GONE);
                     if (bottomButtonsLayout.getVisibility() == View.VISIBLE) {
