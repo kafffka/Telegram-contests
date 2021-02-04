@@ -743,7 +743,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
         selectionContainerView.layout(x, y, x + selectionContainerView.getMeasuredWidth(), y + selectionContainerView.getMeasuredHeight());
         colorPicker.layout(0, actionBarHeight2, colorPicker.getMeasuredWidth(), actionBarHeight2 + colorPicker.getMeasuredHeight());
         toolsView.layout(0, height - toolsView.getMeasuredHeight(), toolsView.getMeasuredWidth(), height);
-        curtainView.layout(0, y, curtainView.getMeasuredWidth(), y + curtainView.getMeasuredHeight());
+        curtainView.layout(0, status, curtainView.getMeasuredWidth(), status + curtainView.getMeasuredHeight());
     }
 
     @Override
