@@ -69,7 +69,7 @@ public class ChangeBioActivity extends BaseFragment {
                 if (id == -1) {
                     finishFragment();
                 } else if (id == done_button) {
-                    saveName();
+                    saveBio();
                 }
             }
         });
@@ -189,17 +189,17 @@ public class ChangeBioActivity extends BaseFragment {
         }
     }
 
-    private void saveName() {
+    private void saveBio() {
         final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
         if (getParentActivity() == null || userFull == null) {
             return;
         }
-        String currentName = userFull.about;
-        if (currentName == null) {
-            currentName = "";
+        String currentBio = userFull.about;
+        if (currentBio == null) {
+            currentBio = "";
         }
-        final String newName = bioField.getText().toString().replace("\n", "");
-        if (currentName.equals(newName)) {
+        final String newBio = bioField.getText().toString().replace("\n", "");
+        if (currentBio.equals(newBio)) {
             finishFragment();
             return;
         }
@@ -207,7 +207,7 @@ public class ChangeBioActivity extends BaseFragment {
         final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
 
         final TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
-        req.about = newName;
+        req.about = newBio;
         req.flags |= 4;
 
         final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
@@ -219,7 +219,7 @@ public class ChangeBioActivity extends BaseFragment {
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
-                    userFull.about = newName;
+                    userFull.about = newBio;
                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.userInfoDidLoad, user.id, userFull);
                     finishFragment();
                 });
