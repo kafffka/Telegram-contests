@@ -13,7 +13,6 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.ImageFormat;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
@@ -25,7 +24,6 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.text.TextUtils;
-import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -33,9 +31,12 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.google.android.gms.vision.Frame;
-import com.google.android.gms.vision.barcode.Barcode;
-import com.google.android.gms.vision.barcode.BarcodeDetector;
+import com.google.android.gms.tasks.Tasks;
+import com.google.mlkit.vision.barcode.Barcode;
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
+import com.google.mlkit.vision.barcode.BarcodeScanning;
+import com.google.mlkit.vision.common.InputImage;
 import com.google.zxing.BinaryBitmap;
 import com.google.zxing.LuminanceSource;
 import com.google.zxing.PlanarYUVLuminanceSource;
@@ -45,7 +46,6 @@ import com.google.zxing.common.GlobalHistogramBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
@@ -68,6 +68,8 @@ import org.telegram.ui.Components.LayoutHelper;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @TargetApi(18)
 public class CameraScanActivity extends BaseFragment implements Camera.PreviewCallback {
@@ -89,7 +91,8 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
     private boolean recognized;
 
     private QRCodeReader qrReader;
-    private BarcodeDetector visionQrReader;
+    private BarcodeScanner barcodeScanner;
+    private boolean isVisionQrReaderAvailable = true;
 
     private boolean needGalleryButton;
 
@@ -173,7 +176,8 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
         currentType = type;
         if (currentType == TYPE_QR) {
             qrReader = new QRCodeReader();
-            visionQrReader = new BarcodeDetector.Builder(ApplicationLoader.applicationContext).setBarcodeFormats(Barcode.QR_CODE).build();
+            BarcodeScannerOptions barcodeScannerOptions = new BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build();
+            barcodeScanner = BarcodeScanning.getClient(barcodeScannerOptions);
         }
     }
 
@@ -184,8 +188,8 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
         if (getParentActivity() != null) {
             getParentActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         }
-        if (visionQrReader != null) {
-            visionQrReader.release();
+        if (barcodeScanner != null) {
+            barcodeScanner.close();
         }
     }
 
@@ -595,21 +599,29 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
 
     private String tryReadQr(byte[] data, Size size, int x, int y, int side, Bitmap bitmap) {
         try {
-            String text;
-            if (visionQrReader.isOperational()) {
-                Frame frame;
+            String text = null;
+            if (isVisionQrReaderAvailable) {
+                InputImage image;
                 if (bitmap != null) {
-                    frame = new Frame.Builder().setBitmap(bitmap).build();
+                    image = InputImage.fromBitmap(bitmap, 0);
                 } else {
-                    frame = new Frame.Builder().setImageData(ByteBuffer.wrap(data), size.getWidth(), size.getHeight(), ImageFormat.NV21).build();
+                    image = InputImage.fromByteBuffer(ByteBuffer.wrap(data), size.getWidth(), size.getHeight(), 0, InputImage.IMAGE_FORMAT_NV21);
                 }
-                SparseArray<Barcode> codes = visionQrReader.detect(frame);
-                if (codes != null && codes.size() > 0) {
-                    text = codes.valueAt(0).rawValue;
-                } else {
-                    text = null;
+                try {
+                    List<Barcode> codes = Tasks.await(barcodeScanner.process(image));
+                    if (codes != null && codes.size() > 0) {
+                        text = codes.get(0).getRawValue();
+                    } else {
+                        text = null;
+                    }
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                    barcodeScanner.close();
+                    barcodeScanner = null;
+                    isVisionQrReaderAvailable = false;
                 }
-            } else {
+            }
+            if (!isVisionQrReaderAvailable) {
                 LuminanceSource source;
                 if (bitmap != null) {
                     int[] intArray = new int[bitmap.getWidth() * bitmap.getHeight()];

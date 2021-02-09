@@ -11,7 +11,6 @@ import android.graphics.Rect;
 import android.os.Build;
 import android.os.Looper;
 import android.text.TextUtils;
-import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -24,13 +23,15 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.google.android.gms.vision.Frame;
-import com.google.android.gms.vision.face.Face;
-import com.google.android.gms.vision.face.FaceDetector;
+import com.google.android.gms.tasks.Tasks;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.face.Face;
+import com.google.mlkit.vision.face.FaceDetection;
+import com.google.mlkit.vision.face.FaceDetector;
+import com.google.mlkit.vision.face.FaceDetectorOptions;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Bitmaps;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -61,6 +62,7 @@ import org.telegram.ui.PhotoViewer;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.List;
 
 @SuppressLint("NewApi")
 public class PhotoPaintView extends FrameLayout implements EntityView.EntityViewDelegate {
@@ -1471,19 +1473,19 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
     private int getFrameRotation() {
         switch (originalBitmapRotation) {
             case 90: {
-                return Frame.ROTATION_90;
+                return 90;
             }
 
             case 180: {
-                return Frame.ROTATION_180;
+                return 180;
             }
 
             case 270: {
-                return Frame.ROTATION_270;
+                return 270;
             }
 
             default: {
-                return Frame.ROTATION_0;
+                return 0;
             }
         }
     }
@@ -1496,30 +1498,16 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
         queue.postRunnable(() -> {
             FaceDetector faceDetector = null;
             try {
-                faceDetector = new FaceDetector.Builder(getContext())
-                        .setMode(FaceDetector.ACCURATE_MODE)
-                        .setLandmarkType(FaceDetector.ALL_LANDMARKS)
-                        .setTrackingEnabled(false).build();
-                if (!faceDetector.isOperational()) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("face detection is not operational");
-                    }
-                    return;
-                }
-
-                Frame frame = new Frame.Builder().setBitmap(facesBitmap).setRotation(getFrameRotation()).build();
-                SparseArray<Face> faces;
-                try {
-                    faces = faceDetector.detect(frame);
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                    return;
-                }
+                FaceDetectorOptions faceDetectorOptions = new FaceDetectorOptions.Builder()
+                        .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+                        .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
+                        .build();
+                faceDetector = FaceDetection.getClient(faceDetectorOptions);
+                List<Face> faces = Tasks.await(faceDetector.process(InputImage.fromBitmap(facesBitmap, getFrameRotation())));
                 ArrayList<PhotoFace> result = new ArrayList<>();
                 Size targetSize = getPaintingSize();
                 for (int i = 0; i < faces.size(); i++) {
-                    int key = faces.keyAt(i);
-                    Face f = faces.get(key);
+                    Face f = faces.get(i);
                     PhotoFace face = new PhotoFace(f, facesBitmap, targetSize, isSidewardOrientation());
                     if (face.isSufficient()) {
                         result.add(face);
@@ -1530,7 +1518,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
                 FileLog.e(e);
             } finally {
                 if (faceDetector != null) {
-                    faceDetector.release();
+                    faceDetector.close();
                 }
             }
         });

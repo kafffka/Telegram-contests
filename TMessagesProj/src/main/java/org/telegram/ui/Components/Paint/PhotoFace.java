@@ -3,8 +3,8 @@ package org.telegram.ui.Components.Paint;
 import android.graphics.Bitmap;
 import android.graphics.PointF;
 
-import com.google.android.gms.vision.face.Face;
-import com.google.android.gms.vision.face.Landmark;
+import com.google.mlkit.vision.face.Face;
+import com.google.mlkit.vision.face.FaceLandmark;
 
 import org.telegram.ui.Components.Size;
 import org.telegram.ui.Components.Point;
@@ -25,7 +25,7 @@ public class PhotoFace {
     private Point chinPoint;
 
     public PhotoFace(Face face, Bitmap sourceBitmap, Size targetSize, boolean sideward) {
-        List<Landmark> landmarks = face.getLandmarks();
+        List<FaceLandmark> landmarks = face.getAllLandmarks();
 
         Point leftEyePoint = null;
         Point rightEyePoint = null;
@@ -33,26 +33,26 @@ public class PhotoFace {
         Point leftMouthPoint = null;
         Point rightMouthPoint = null;
 
-        for (Landmark landmark : landmarks) {
+        for (FaceLandmark landmark : landmarks) {
             PointF point = landmark.getPosition();
 
-            switch (landmark.getType()) {
-                case Landmark.LEFT_EYE: {
+            switch (landmark.getLandmarkType()) {
+                case FaceLandmark.LEFT_EYE: {
                     leftEyePoint = transposePoint(point, sourceBitmap, targetSize, sideward);
                 }
                 break;
 
-                case Landmark.RIGHT_EYE: {
+                case FaceLandmark.RIGHT_EYE: {
                     rightEyePoint = transposePoint(point, sourceBitmap, targetSize, sideward);
                 }
                 break;
 
-                case Landmark.LEFT_MOUTH: {
+                case FaceLandmark.MOUTH_LEFT: {
                     leftMouthPoint = transposePoint(point, sourceBitmap, targetSize, sideward);
                 }
                 break;
 
-                case Landmark.RIGHT_MOUTH: {
+                case FaceLandmark.MOUTH_RIGHT: {
                     rightMouthPoint = transposePoint(point, sourceBitmap, targetSize, sideward);
                 }
                 break;
