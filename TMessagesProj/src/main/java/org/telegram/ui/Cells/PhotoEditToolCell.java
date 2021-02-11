@@ -16,6 +16,7 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
@@ -60,51 +61,62 @@ public class PhotoEditToolCell extends FrameLayout {
         nameTextView.setGravity(Gravity.RIGHT);
         nameTextView.setTextColor(0xffffffff);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        nameTextView.setMaxLines(1);
         nameTextView.setSingleLine(true);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
-        addView(nameTextView, LayoutHelper.createFrame(80, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
+        nameTextView.setOnClickListener(new DoubleClickListener() {
+            @Override
+            public void onDoubleClick(View v) {
+                if (seekBar.getProgress() != 0) {
+
+                    performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    seekBar.setProgress(0, true, true);
+                }
+            }
+        });
+        addView(nameTextView, LayoutHelper.createFrame(80, 24, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 
         valueTextView = new TextView(context);
         valueTextView.setTextColor(0xff6cc3ff);
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         valueTextView.setGravity(Gravity.RIGHT);
         valueTextView.setSingleLine(true);
-        addView(valueTextView, LayoutHelper.createFrame(80, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
+        addView(valueTextView, LayoutHelper.createFrame(80, 24, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 
         seekBar = new PhotoEditorSeekBar(context);
         addView(seekBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.LEFT | Gravity.CENTER_VERTICAL, 96, 0, 24, 0));
     }
 
     public void setSeekBarDelegate(final PhotoEditorSeekBar.PhotoEditorSeekBarDelegate photoEditorSeekBarDelegate) {
-        seekBar.setDelegate((i, progress) -> {
-            photoEditorSeekBarDelegate.onProgressChanged(i, progress);
-            if (progress > 0) {
-                valueTextView.setText("+" + progress);
-            } else {
-                valueTextView.setText("" + progress);
-            }
-            if (valueTextView.getTag() == null) {
-                if (valueAnimation != null) {
-                    valueAnimation.cancel();
+        seekBar.setDelegate((i, progress, fromAnimation) -> {
+            photoEditorSeekBarDelegate.onProgressChanged(i, progress, fromAnimation);
+            if (!fromAnimation) {
+                if (progress > 0) {
+                    valueTextView.setText("+" + progress);
+                } else {
+                    valueTextView.setText("" + progress);
                 }
-                valueTextView.setTag(1);
-                valueAnimation = new AnimatorSet();
-                valueAnimation.playTogether(
-                        ObjectAnimator.ofFloat(valueTextView, View.ALPHA, 1.0f),
-                        ObjectAnimator.ofFloat(nameTextView, View.ALPHA, 0.0f));
-                valueAnimation.setDuration(250);
-                valueAnimation.setInterpolator(new DecelerateInterpolator());
-                valueAnimation.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        AndroidUtilities.runOnUIThread(hideValueRunnable, 1000);
+                if (valueTextView.getTag() == null) {
+                    if (valueAnimation != null) {
+                        valueAnimation.cancel();
                     }
-                });
-                valueAnimation.start();
-            } else {
-                AndroidUtilities.cancelRunOnUIThread(hideValueRunnable);
-                AndroidUtilities.runOnUIThread(hideValueRunnable, 1000);
+                    valueTextView.setTag(1);
+                    valueAnimation = new AnimatorSet();
+                    valueAnimation.playTogether(
+                            ObjectAnimator.ofFloat(valueTextView, View.ALPHA, 1.0f),
+                            ObjectAnimator.ofFloat(nameTextView, View.ALPHA, 0.0f));
+                    valueAnimation.setDuration(250);
+                    valueAnimation.setInterpolator(new DecelerateInterpolator());
+                    valueAnimation.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            AndroidUtilities.runOnUIThread(hideValueRunnable, 1000);
+                        }
+                    });
+                    valueAnimation.start();
+                } else {
+                    AndroidUtilities.cancelRunOnUIThread(hideValueRunnable);
+                    AndroidUtilities.runOnUIThread(hideValueRunnable, 1000);
+                }
             }
         });
     }
@@ -136,6 +148,23 @@ public class PhotoEditToolCell extends FrameLayout {
         valueTextView.setAlpha(0.0f);
         nameTextView.setAlpha(1.0f);
         seekBar.setMinMax(min, max);
-        seekBar.setProgress((int) value, false);
+        seekBar.setProgress((int) value, false, false);
+    }
+
+    private abstract class DoubleClickListener implements OnClickListener {
+        private static final long DOUBLE_CLICK_TIME_DELTA = 300;
+        private long lastClickTime = 0;
+
+        @Override
+        public void onClick(View v) {
+            long clickTime = System.currentTimeMillis();
+            if (clickTime - lastClickTime < DOUBLE_CLICK_TIME_DELTA){
+                onDoubleClick(v);
+                lastClickTime = 0;
+            }
+            lastClickTime = clickTime;
+        }
+
+        public abstract void onDoubleClick(View v);
     }
 }

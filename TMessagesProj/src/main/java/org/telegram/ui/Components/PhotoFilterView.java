@@ -1043,7 +1043,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             if (i == 0) {
                 PhotoEditToolCell cell = new PhotoEditToolCell(mContext);
                 view = cell;
-                cell.setSeekBarDelegate((i1, progress) -> {
+                cell.setSeekBarDelegate((i1, progress, fromAnimation) -> {
                     if (i1 == enhanceTool) {
                         enhanceValue = progress;
                     } else if (i1 == highlightsTool) {
