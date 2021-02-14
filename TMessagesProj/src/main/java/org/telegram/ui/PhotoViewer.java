@@ -125,9 +125,12 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.analytics.AnalyticsListener;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
-import com.google.android.gms.vision.Frame;
-import com.google.android.gms.vision.face.Face;
-import com.google.android.gms.vision.face.FaceDetector;
+import com.google.android.gms.tasks.Tasks;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.face.Face;
+import com.google.mlkit.vision.face.FaceDetection;
+import com.google.mlkit.vision.face.FaceDetector;
+import com.google.mlkit.vision.face.FaceDetectorOptions;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Bitmaps;
@@ -7718,39 +7721,35 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         Utilities.globalQueue.postRunnable(() -> {
             FaceDetector faceDetector = null;
             try {
-                faceDetector = new FaceDetector.Builder(ApplicationLoader.applicationContext)
-                        .setMode(FaceDetector.FAST_MODE)
-                        .setLandmarkType(FaceDetector.NO_LANDMARKS)
-                        .setTrackingEnabled(false).build();
-                if (faceDetector.isOperational()) {
-                    Frame frame = new Frame.Builder().setBitmap(bitmap.bitmap).setRotation(orientation).build();
-                    SparseArray<Face> faces = faceDetector.detect(frame);
-                    boolean hasFaces = faces != null && faces.size() != 0;
-                    AndroidUtilities.runOnUIThread(() -> {
-                        String imageKey = centerImage.getImageKey();
-                        if (key.equals(imageKey)) {
-                            currentImageHasFace = hasFaces ? 1 : 0;
-                            currentImageFaceKey = key;
-                        }
-                    });
-                } else {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("face detection is not operational");
+                FaceDetectorOptions faceDetectorOptions = new FaceDetectorOptions.Builder()
+                        .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+                        .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
+                        .build();
+                faceDetector = FaceDetection.getClient(faceDetectorOptions);
+                List<Face> faces = Tasks.await(faceDetector.process(InputImage.fromBitmap(bitmap.bitmap, orientation)));
+                boolean hasFaces = faces != null && faces.size() != 0;
+                AndroidUtilities.runOnUIThread(() -> {
+                    String imageKey = centerImage.getImageKey();
+                    if (key.equals(imageKey)) {
+                        currentImageHasFace = hasFaces ? 1 : 0;
+                        currentImageFaceKey = key;
                     }
-                    AndroidUtilities.runOnUIThread(() -> {
-                        bitmap.release();
-                        String imageKey = centerImage.getImageKey();
-                        if (key.equals(imageKey)) {
-                            currentImageHasFace = 2;
-                            currentImageFaceKey = key;
-                        }
-                    });
-                }
+                });
             } catch (Exception e) {
-                FileLog.e(e);
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("face detection is not available");
+                }
+                AndroidUtilities.runOnUIThread(() -> {
+                    bitmap.release();
+                    String imageKey = centerImage.getImageKey();
+                    if (key.equals(imageKey)) {
+                        currentImageHasFace = 2;
+                        currentImageFaceKey = key;
+                    }
+                });
             } finally {
                 if (faceDetector != null) {
-                    faceDetector.release();
+                    faceDetector.close();
                 }
             }
         });
