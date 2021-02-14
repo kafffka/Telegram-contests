@@ -21,6 +21,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -50,7 +51,7 @@ import java.util.ArrayList;
 
 public class ChangeBioActivity extends BaseFragment {
 
-    private EditTextBoldCursor firstNameField;
+    private EditTextBoldCursor bioField;
     private View doneButton;
     private NumberTextView checkTextView;
     private TextView helpTextView;
@@ -68,7 +69,7 @@ public class ChangeBioActivity extends BaseFragment {
                 if (id == -1) {
                     finishFragment();
                 } else if (id == done_button) {
-                    saveName();
+                    saveBio();
                 }
             }
         });
@@ -85,17 +86,22 @@ public class ChangeBioActivity extends BaseFragment {
         FrameLayout fieldContainer = new FrameLayout(context);
         linearLayout.addView(fieldContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 24, 20, 0));
 
-        firstNameField = new EditTextBoldCursor(context);
-        firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        firstNameField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-        firstNameField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        firstNameField.setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
-        firstNameField.setMaxLines(4);
-        firstNameField.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 24 : 0), 0, AndroidUtilities.dp(LocaleController.isRTL ? 0 : 24), AndroidUtilities.dp(6));
-        firstNameField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        firstNameField.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-        firstNameField.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        firstNameField.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        bioField = new EditTextBoldCursor(context) {
+            @Override
+            public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+                InputConnection conn = super.onCreateInputConnection(outAttrs);
+                outAttrs.imeOptions &= ~EditorInfo.IME_FLAG_NO_ENTER_ACTION;
+                return conn;
+            }
+        };
+        bioField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        bioField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+        bioField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        bioField.setBackgroundDrawable(Theme.createEditTextDrawable(context, false));
+        bioField.setMaxLines(4);
+        bioField.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 24 : 0), 0, AndroidUtilities.dp(LocaleController.isRTL ? 0 : 24), AndroidUtilities.dp(6));
+        bioField.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        bioField.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         InputFilter[] inputFilters = new InputFilter[1];
         inputFilters[0] = new CodepointsLengthInputFilter(70) {
             @Override
@@ -115,20 +121,20 @@ public class ChangeBioActivity extends BaseFragment {
                 return result;
             }
         };
-        firstNameField.setFilters(inputFilters);
-        firstNameField.setMinHeight(AndroidUtilities.dp(36));
-        firstNameField.setHint(LocaleController.getString("UserBio", R.string.UserBio));
-        firstNameField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        firstNameField.setCursorSize(AndroidUtilities.dp(20));
-        firstNameField.setCursorWidth(1.5f);
-        firstNameField.setOnEditorActionListener((textView, i, keyEvent) -> {
+        bioField.setFilters(inputFilters);
+        bioField.setMinHeight(AndroidUtilities.dp(36));
+        bioField.setHint(LocaleController.getString("UserBio", R.string.UserBio));
+        bioField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        bioField.setCursorSize(AndroidUtilities.dp(20));
+        bioField.setCursorWidth(1.5f);
+        bioField.setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_DONE && doneButton != null) {
                 doneButton.performClick();
                 return true;
             }
             return false;
         });
-        firstNameField.addTextChangedListener(new TextWatcher() {
+        bioField.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
@@ -145,7 +151,7 @@ public class ChangeBioActivity extends BaseFragment {
             }
         });
 
-        fieldContainer.addView(firstNameField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 0, 4, 0));
+        fieldContainer.addView(bioField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 0, 4, 0));
 
         checkTextView = new NumberTextView(context);
         checkTextView.setCenterAlign(true);
@@ -165,8 +171,8 @@ public class ChangeBioActivity extends BaseFragment {
 
         TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
         if (userFull != null && userFull.about != null) {
-            firstNameField.setText(userFull.about);
-            firstNameField.setSelection(firstNameField.length());
+            bioField.setText(userFull.about);
+            bioField.setSelection(bioField.length());
         }
 
         return fragmentView;
@@ -178,22 +184,22 @@ public class ChangeBioActivity extends BaseFragment {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         boolean animations = preferences.getBoolean("view_animations", true);
         if (!animations) {
-            firstNameField.requestFocus();
-            AndroidUtilities.showKeyboard(firstNameField);
+            bioField.requestFocus();
+            AndroidUtilities.showKeyboard(bioField);
         }
     }
 
-    private void saveName() {
+    private void saveBio() {
         final TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
         if (getParentActivity() == null || userFull == null) {
             return;
         }
-        String currentName = userFull.about;
-        if (currentName == null) {
-            currentName = "";
+        String currentBio = userFull.about;
+        if (currentBio == null) {
+            currentBio = "";
         }
-        final String newName = firstNameField.getText().toString().replace("\n", "");
-        if (currentName.equals(newName)) {
+        final String newBio = bioField.getText().toString().replace("\n", "");
+        if (currentBio.equals(newBio)) {
             finishFragment();
             return;
         }
@@ -201,7 +207,7 @@ public class ChangeBioActivity extends BaseFragment {
         final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
 
         final TLRPC.TL_account_updateProfile req = new TLRPC.TL_account_updateProfile();
-        req.about = newName;
+        req.about = newBio;
         req.flags |= 4;
 
         final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
@@ -213,7 +219,7 @@ public class ChangeBioActivity extends BaseFragment {
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
-                    userFull.about = newName;
+                    userFull.about = newBio;
                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.userInfoDidLoad, user.id, userFull);
                     finishFragment();
                 });
@@ -237,8 +243,8 @@ public class ChangeBioActivity extends BaseFragment {
     @Override
     public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen) {
-            firstNameField.requestFocus();
-            AndroidUtilities.showKeyboard(firstNameField);
+            bioField.requestFocus();
+            AndroidUtilities.showKeyboard(bioField);
         }
     }
 
@@ -253,10 +259,10 @@ public class ChangeBioActivity extends BaseFragment {
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-        themeDescriptions.add(new ThemeDescription(firstNameField, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(firstNameField, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
-        themeDescriptions.add(new ThemeDescription(firstNameField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
-        themeDescriptions.add(new ThemeDescription(firstNameField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
+        themeDescriptions.add(new ThemeDescription(bioField, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(bioField, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
+        themeDescriptions.add(new ThemeDescription(bioField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
+        themeDescriptions.add(new ThemeDescription(bioField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
 
         themeDescriptions.add(new ThemeDescription(helpTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText8));
 
