@@ -9672,7 +9672,21 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 } else {
                     allowShare = true;
                     menuItem.showSubItem(gallery_menu_save);
-                    paintButton.setVisibility(!isVideo && canSendMediaToParentChatActivity() ? View.VISIBLE : View.GONE);
+                    boolean showPaint = (newMessageObject.isPhoto() || newMessageObject.canPreviewDocument()) && canSendMediaToParentChatActivity();
+                    boolean isPaintVisibleNow = paintButton.getVisibility() == View.VISIBLE;
+                    paintButton.setEnabled(showPaint);
+
+                    if (!isVideo && isPaintVisibleNow != showPaint) {
+                        paintButton.animate().setListener(null).cancel();
+                        if (showPaint) {
+                            paintButton.setVisibility(View.VISIBLE);
+                        }
+                        paintButton.animate().alpha(showPaint ? 1f : 0f).setInterpolator(new LinearInterpolator()).setDuration(100).withEndAction(() -> {
+                            if (!showPaint) {
+                                paintButton.setVisibility(View.GONE);
+                            }
+                        }).start();
+                    }
                     bottomButtonsLayout.setVisibility(!videoPlayerControlVisible ? View.VISIBLE : View.GONE);
                     if (bottomButtonsLayout.getVisibility() == View.VISIBLE) {
                         menuItem.hideSubItem(gallery_menu_share);
