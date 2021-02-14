@@ -8,11 +8,13 @@
 
 package org.telegram.ui.Components;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
 
@@ -27,9 +29,11 @@ public class PhotoEditorSeekBar extends View {
     private int minValue;
     private int maxValue;
     private PhotoEditorSeekBarDelegate delegate;
+    private ValueAnimator progressAnimator;
+    private DecelerateInterpolator decelerateInterpolator;
 
     public interface PhotoEditorSeekBarDelegate {
-        void onProgressChanged(int i, int progress);
+        void onProgressChanged(int i, int progress, boolean fromAnimation);
     }
 
     public PhotoEditorSeekBar(Context context) {
@@ -47,6 +51,10 @@ public class PhotoEditorSeekBar extends View {
     public boolean onTouchEvent(MotionEvent event) {
         if (event == null) {
             return false;
+        }
+        if (progressAnimator != null) {
+            progressAnimator.removeAllListeners();
+            progressAnimator.cancel();
         }
         float x = event.getX();
         float y = event.getY();
@@ -76,7 +84,7 @@ public class PhotoEditorSeekBar extends View {
                 }
                 progress = thumbX / (getMeasuredWidth() - thumbSize);
                 if (delegate != null) {
-                    delegate.onProgressChanged((Integer) getTag(), getProgress());
+                    delegate.onProgressChanged((Integer) getTag(), getProgress(), false);
                 }
                 invalidate();
                 return true;
@@ -85,20 +93,41 @@ public class PhotoEditorSeekBar extends View {
         return false;
     }
 
-    public void setProgress(int progress) {
-        setProgress(progress, true);
-    }
-
-    public void setProgress(int progress, boolean notify) {
+    public void setProgress(int progress, boolean notify, boolean animate) {
         if (progress < minValue) {
             progress = minValue;
         } else if (progress > maxValue) {
             progress = maxValue;
         }
-        this.progress = (progress - minValue) / (float) (maxValue - minValue);
-        invalidate();
-        if (notify && delegate != null) {
-            delegate.onProgressChanged((Integer) getTag(), getProgress());
+        float prevProgress = this.progress;
+        float newProgress = (progress - minValue) / (float) (maxValue - minValue);
+
+        if (animate) {
+            if (progressAnimator != null) {
+                progressAnimator.removeAllListeners();
+                progressAnimator.cancel();
+            }
+            if (decelerateInterpolator == null) {
+                decelerateInterpolator = new DecelerateInterpolator();
+            }
+
+            progressAnimator = ValueAnimator.ofFloat(prevProgress, newProgress);
+            progressAnimator.setInterpolator(decelerateInterpolator);
+            progressAnimator.addUpdateListener(animation -> {
+                this.progress = (float) animation.getAnimatedValue();
+                invalidate();
+                if (notify && delegate != null) {
+                    delegate.onProgressChanged((Integer) getTag(), getProgress(), true);
+                }
+            });
+            progressAnimator.setDuration(200);
+            progressAnimator.start();
+        } else {
+            this.progress = newProgress;
+            invalidate();
+            if (notify && delegate != null) {
+                delegate.onProgressChanged((Integer) getTag(), getProgress(), false);
+            }
         }
     }
 
