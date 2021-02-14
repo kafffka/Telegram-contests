@@ -14,6 +14,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Paint.Swatch;
@@ -170,6 +172,7 @@ public class TextPaintView extends EntityView {
             editText.setFrameColor(swatch.color);
             editText.setShadowLayer(0, 0, 0, 0);
         }
+        editText.setCursorColor(editText.getCurrentTextColor());
     }
 
     @Override
