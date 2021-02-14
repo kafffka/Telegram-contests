@@ -38,6 +38,7 @@ public class TextPaintView extends EntityView {
         editText.setClickable(false);
         editText.setEnabled(false);
         editText.setCursorColor(0xffffffff);
+        editText.setCursorSize(baseFontSize);
         editText.setTextSize(TypedValue.COMPLEX_UNIT_PX, baseFontSize);
         editText.setText(text);
         editText.setTextColor(swatch.color);
