@@ -161,6 +161,18 @@ public class SeekBarWaveform {
         height = h;
     }
 
+    public void setWidth(int w) {
+        width = w;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
     public void draw(Canvas canvas, View parentView) {
         if (waveformBytes == null || width == 0) {
             return;

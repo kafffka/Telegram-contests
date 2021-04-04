@@ -580,7 +580,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
                 params.changePinnedBottomProgress = 0;
             }
 
-            moveInfo.animateChangeInternal = chatMessageCell.getTransitionParams().animateChange();
+            moveInfo.animateChangeInternal = !chatMessageCell.getTransitionParams().isRunningMessageEnterTransition && chatMessageCell.getTransitionParams().animateChange();
             if (moveInfo.animateChangeInternal) {
                 chatMessageCell.getTransitionParams().animateChange = true;
                 chatMessageCell.getTransitionParams().animateChangeProgress = 0f;

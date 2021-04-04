@@ -258,6 +258,10 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         }
 
+        default void onStickerSelected(View view, TLRPC.Document sticker, String query, Object parent, boolean notify, int scheduleDate, float x, float y, float width, float height) {
+
+        }
+
         default void onStickersSettingsClick() {
 
         }
@@ -1637,7 +1641,12 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     return;
                 }
                 cell.disable();
-                delegate.onStickerSelected(cell, cell.getSticker(), query, cell.getParentObject(), true, 0);
+                ImageReceiver imageReceiver = cell.getImageView().getImageReceiver();
+                int[] location = new int[2];
+                view.getLocationOnScreen(location);
+                location[0] += cell.getImageView().getX();
+                location[1] += cell.getImageView().getY();
+                delegate.onStickerSelected(cell, cell.getSticker(), query, cell.getParentObject(), true, 0, location[0], location[1], imageReceiver.getImageWidth(), imageReceiver.getImageHeight());
             };
             stickersGridView.setOnItemClickListener(stickersOnItemClickListener);
             stickersGridView.setGlowColor(Theme.getColor(Theme.key_chat_emojiPanelBackground));

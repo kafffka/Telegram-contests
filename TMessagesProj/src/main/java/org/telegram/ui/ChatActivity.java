@@ -74,6 +74,7 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -14914,7 +14915,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else if (currentChat != null && currentChat.megagroup && (action instanceof TLRPC.TL_messageActionChatAddUser || action instanceof TLRPC.TL_messageActionChatDeleteUser)) {
                     reloadMegagroup = true;
                 }
-                if (a == 0 && obj.messageOwner.id < 0 && (obj.type == MessageObject.TYPE_ROUND_VIDEO || obj.isVoice()) && chatMode != MODE_SCHEDULED) {
+                if (a == 0 && obj.messageOwner.id < 0 && (obj.type == MessageObject.TYPE_ROUND_VIDEO ||(!obj.isGif() && !obj.isForwarded() && (obj.isVoice() || obj.isAnimatedEmoji() || (obj.isAnyKindOfSticker() && chatActivityEnterView.canStickerAnimationStart && chatActivityEnterView.stickerX != -1 && chatActivityEnterView.stickerY != -1) || (obj.textLayoutBlocks != null && obj.textLayoutBlocks.size() != 0)))) && chatMode != MODE_SCHEDULED) {
                     needAnimateToMessage = obj;
                 }
                 if (obj.isOut() && obj.wasJustSent) {
@@ -15043,7 +15044,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 }
                 addToPolls(obj, null);
-                if (a == 0 && obj.messageOwner.id < 0 && (obj.type == MessageObject.TYPE_ROUND_VIDEO || obj.isVoice()) && chatMode != MODE_SCHEDULED) {
+                if (a == 0 && obj.messageOwner.id < 0 && (obj.type == MessageObject.TYPE_ROUND_VIDEO ||(!obj.isGif()  && !obj.isForwarded() && (obj.isVoice() || obj.isAnimatedEmoji() || (obj.isAnyKindOfSticker() && chatActivityEnterView.canStickerAnimationStart && chatActivityEnterView.stickerX != -1 && chatActivityEnterView.stickerY != -1) || (obj.textLayoutBlocks != null && obj.textLayoutBlocks.size() != 0)))) && chatMode != MODE_SCHEDULED) {
                     animatingMessageObjects.add(obj);
                 }
 
@@ -21812,30 +21813,64 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                         final InstantCameraView.InstantViewCameraContainer cameraContainer = instantCameraView.getCameraContainer();
                                         cameraContainer.setPivotX(0.0f);
                                         cameraContainer.setPivotY(0.0f);
-                                        AnimatorSet animatorSet = new AnimatorSet();
 
                                         cameraContainer.setImageReceiver(imageReceiver);
 
                                         instantCameraView.cancelBlur();
 
-                                        AnimatorSet allAnimators = new AnimatorSet();
-                                        animatorSet.playTogether(
-                                                ObjectAnimator.ofFloat(cameraContainer, View.SCALE_X, scale),
-                                                ObjectAnimator.ofFloat(cameraContainer, View.SCALE_Y, scale),
-                                                ObjectAnimator.ofFloat(cameraContainer, View.TRANSLATION_Y, position[1] - rect.y),
-                                                ObjectAnimator.ofFloat(instantCameraView.getSwitchButtonView(), View.ALPHA, 0.0f),
-                                                ObjectAnimator.ofInt(instantCameraView.getPaint(), AnimationProperties.PAINT_ALPHA, 0),
-                                                ObjectAnimator.ofFloat(instantCameraView.getMuteImageView(), View.ALPHA, 0.0f)
-                                        );
-                                        animatorSet.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
-                                        ObjectAnimator o = ObjectAnimator.ofFloat(cameraContainer, View.TRANSLATION_X, position[0] - rect.x);
-                                        o.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                                        int animationType = 7;
+                                        int duration = MessagesController.getGlobalMessageAnimationSettings().getInt("duration_type_" + animationType, 6000);
+                                        int startXTime = MessagesController.getGlobalMessageAnimationSettings().getInt("start_time_type_" + animationType + "_row_" + "xPosition", 0);
+                                        int endXTime = MessagesController.getGlobalMessageAnimationSettings().getInt("end_time_type_" + animationType + "_row_" + "xPosition", 0);
+                                        float startXProgress = MessagesController.getGlobalMessageAnimationSettings().getFloat("start_progress_type_" + animationType + "_row_" + "xPosition", 0);
+                                        float endXProgress = MessagesController.getGlobalMessageAnimationSettings().getFloat("end_progress_type_" + animationType + "_row_" + "xPosition", 0);
+                                        int startYTime = MessagesController.getGlobalMessageAnimationSettings().getInt("start_time_type_" + animationType + "_row_" + "yPosition", 0);
+                                        int endYTime = MessagesController.getGlobalMessageAnimationSettings().getInt("end_time_type_" + animationType + "_row_" + "yPosition", 0);
+                                        float startYProgress = MessagesController.getGlobalMessageAnimationSettings().getFloat("start_progress_type_" + animationType + "_row_" + "yPosition", 0);
+                                        float endYProgress = MessagesController.getGlobalMessageAnimationSettings().getFloat("end_progress_type_" + animationType + "_row_" + "yPosition", 0);
 
-                                        allAnimators.playTogether(o, animatorSet);
-                                        allAnimators.setStartDelay(120);
-                                        allAnimators.setDuration(180);
+                                        CubicBezierInterpolator xInterpolator = new CubicBezierInterpolator(startXProgress, 0, 1 - endXProgress, 1);
+                                        CubicBezierInterpolator yInterpolator = new CubicBezierInterpolator(startYProgress, 0, 1 - endYProgress, 1);
 
-                                        allAnimators.addListener(new AnimatorListenerAdapter() {
+                                        ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+                                        animator.setInterpolator(new LinearInterpolator());
+                                        animator.setDuration(duration);
+                                        animator.addUpdateListener(valueAnimator -> {
+                                            float progress = (float) valueAnimator.getAnimatedValue();
+
+                                            float tempX = (float) (endXTime - startXTime) / duration;
+                                            float xProgress = xInterpolator.getInterpolation( (progress - (float) startXTime / duration) / tempX);
+                                            if (progress < (float) startXTime / duration) {
+                                                xProgress = 0;
+                                            } else if (progress > (float) endXTime / duration) {
+                                                xProgress = 1;
+                                            }
+
+                                            float tempY = (float) (endYTime - startYTime) / duration;
+                                            float yProgress = yInterpolator.getInterpolation((progress - (float) startYTime / duration) / tempY);
+                                            if (progress < (float) startYTime / duration) {
+                                                yProgress = 0;
+                                            } else if (progress > (float) endYTime / duration) {
+                                                yProgress = 1;
+                                            }
+
+                                            float xVideo = (position[0] - rect.x) * xProgress;
+                                            float yVideo = (position[1] - rect.y) * yProgress;
+
+                                            cameraContainer.setScaleX(scale);
+                                            cameraContainer.setScaleY(scale);
+                                            cameraContainer.setTranslationX(xVideo);
+                                            cameraContainer.setTranslationY(yVideo);
+                                            instantCameraView.getSwitchButtonView().setAlpha((int) (1 - xProgress));
+                                            instantCameraView.getPaint().setAlpha((int) (255 * (1 - xProgress)));
+                                            instantCameraView.getMuteImageView().setAlpha((int) (1 - xProgress));
+
+                                            messageCell.setAlpha(0.0f);
+                                            messageCell.setTimeAlpha(0.0f);
+
+                                        });
+
+                                        animator.addListener(new AnimatorListenerAdapter() {
                                             @Override
                                             public void onAnimationEnd(Animator animation) {
                                                 messageCell.setAlpha(1.0f);
@@ -21869,27 +21904,29 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                                 animatorSet.start();
                                             }
                                         });
-                                        allAnimators.start();
+                                        animator.start();
                                         return true;
                                     }
                                 });
                             }
-                        } else {
-                            if (chatActivityEnterView.canShowVoiceMessageTransition()) {
-                                messageCell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                                    @Override
-                                    public boolean onPreDraw() {
-                                        messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
-                                        if  (!chatListView.fastScrollAnimationRunning && Math.abs(messageCell.getTranslationY()) < messageCell.getMeasuredHeight() * 3f) {
-                                            VoiceMessageEnterTransition transition = new VoiceMessageEnterTransition(contentView, messageCell, chatActivityEnterView, chatListView);
-                                            transition.start();
-                                        } else {
-                                            chatActivityEnterView.startMessageTransition();
-                                        }
-                                        return true;
+                        } else if (chatActivityEnterView.canShowMessageTransition(message)) {
+                            messageCell.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                                @Override
+                                public boolean onPreDraw() {
+                                    messageCell.getViewTreeObserver().removeOnPreDrawListener(this);
+                                    if (!chatListView.fastScrollAnimationRunning && Math.abs(messageCell.getTranslationY()) < messageCell.getMeasuredHeight() * 3f) {
+                                        MessageEnterTransition transition = new MessageEnterTransition(contentView,
+                                                messageCell,
+                                                chatActivityEnterView,
+                                                chatListView,
+                                                message, instantCameraView);
+                                        transition.start();
+                                    } else {
+                                        chatActivityEnterView.startMessageTransition();
                                     }
-                                });
-                            }
+                                    return true;
+                                }
+                            });
                         }
                     }
                     if (!animatingDocuments.isEmpty() && animatingDocuments.containsKey(message.getDocument())) {

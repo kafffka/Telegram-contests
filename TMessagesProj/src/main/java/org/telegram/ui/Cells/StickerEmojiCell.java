@@ -20,19 +20,19 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
-import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.messenger.SvgHelper;
 
 public class StickerEmojiCell extends FrameLayout {
 
@@ -42,6 +42,7 @@ public class StickerEmojiCell extends FrameLayout {
     private TextView emojiTextView;
     private float alpha = 1;
     private boolean changingAlpha;
+    private boolean changingScale;
     private long lastUpdateTime;
     private boolean scaled;
     private float scale;
@@ -142,8 +143,10 @@ public class StickerEmojiCell extends FrameLayout {
 
     public void disable() {
         changingAlpha = true;
-        alpha = 0.5f;
+        changingScale = true;
+        alpha = 0f;
         time = 0;
+        scale = 0.5f;
         imageView.getImageReceiver().setAlpha(alpha);
         imageView.invalidate();
         lastUpdateTime = System.currentTimeMillis();
@@ -181,15 +184,20 @@ public class StickerEmojiCell extends FrameLayout {
             long newTime = System.currentTimeMillis();
             long dt = (newTime - lastUpdateTime);
             lastUpdateTime = newTime;
-            if (changingAlpha) {
+            if (changingAlpha || changingAlpha) {
                 time += dt;
-                if (time > 1050) {
-                    time = 1050;
+                if (time > 300) {
+                    time = 300;
                 }
-                alpha = 0.5f + interpolator.getInterpolation(time / 1050.0f) * 0.5f;
+                alpha = interpolator.getInterpolation(time / 300f);
                 if (alpha >= 1.0f) {
                     changingAlpha = false;
                     alpha = 1.0f;
+                }
+                scale = 0.5f + alpha*0.5f;
+                if (scale >= 1.0f) {
+                    changingScale = false;
+                    scale = 1.0f;
                 }
                 imageView.getImageReceiver().setAlpha(alpha);
             } else if (scaled && scale != 0.8f) {

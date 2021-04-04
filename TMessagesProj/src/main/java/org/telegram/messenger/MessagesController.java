@@ -310,6 +310,7 @@ public class MessagesController extends BaseController implements NotificationCe
     private SharedPreferences notificationsPreferences;
     private SharedPreferences mainPreferences;
     private SharedPreferences emojiPreferences;
+    private SharedPreferences messageAnimationPreferences;
 
     public volatile boolean ignoreSetOnline;
 
@@ -679,6 +680,218 @@ public class MessagesController extends BaseController implements NotificationCe
         return getInstance(0).emojiPreferences;
     }
 
+    public static SharedPreferences getGlobalMessageAnimationSettings() {
+        return getInstance(0).messageAnimationPreferences;
+    }
+
+    public static void resetGlobalMessageAnimationSettings() {
+        SharedPreferences.Editor editor =  MessagesController.getGlobalMessageAnimationSettings().edit();
+        int defaultDuration = 500;
+        int defaultStartTime = 0;
+        int defaultEndTime = 500;
+        float defaultStartProgressX = 0.33f;
+        float defaultEndProgressX = 1f;
+
+        // Text
+        editor.putInt("duration_type_1", defaultDuration);
+
+        editor.putInt("start_time_type_1_row_xPosition", defaultStartTime);
+        editor.putInt("end_time_type_1_row_xPosition", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_1_row_xPosition", defaultStartProgressX);
+        editor.putFloat("end_progress_type_1_row_xPosition", defaultEndProgressX);
+
+        editor.putInt("start_time_type_1_row_yPosition", defaultStartTime);
+        editor.putInt("end_time_type_1_row_yPosition", defaultEndTime);
+        editor.putFloat("start_progress_type_1_row_yPosition", defaultStartProgressX);
+        editor.putFloat("end_progress_type_1_row_yPosition", defaultEndProgressX);
+
+        editor.putInt("start_time_type_1_row_bubbleShape", defaultStartTime);
+        editor.putInt("end_time_type_1_row_bubbleShape", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_1_row_bubbleShape", defaultStartProgressX);
+        editor.putFloat("end_progress_type_1_row_bubbleShape", defaultEndProgressX);
+
+        editor.putInt("start_time_type_1_row_textScale", defaultStartTime);
+        editor.putInt("end_time_type_1_row_textScale", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_1_row_textScale", defaultStartProgressX);
+        editor.putFloat("end_progress_type_1_row_textScale", defaultEndProgressX);
+
+        editor.putInt("start_time_type_1_row_colorChange", defaultStartTime);
+        editor.putInt("end_time_type_1_row_colorChange", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_1_row_colorChange", defaultStartProgressX);
+        editor.putFloat("end_progress_type_1_row_colorChange", defaultEndProgressX);
+
+        editor.putInt("start_time_type_1_row_timeAppears", defaultStartTime);
+        editor.putInt("end_time_type_1_row_timeAppears", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_1_row_timeAppears", defaultStartProgressX);
+        editor.putFloat("end_progress_type_1_row_timeAppears", defaultEndProgressX);
+        
+        // Link
+        defaultDuration = 500;
+        defaultStartTime = 0;
+        defaultEndTime = 500;
+        defaultStartProgressX = 0.33f;
+        defaultEndProgressX = 1f;
+
+        editor.putInt("duration_type_3", defaultDuration);
+
+        editor.putInt("start_time_type_3_row_xPosition", defaultStartTime);
+        editor.putInt("end_time_type_3_row_xPosition", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_3_row_xPosition", defaultStartProgressX);
+        editor.putFloat("end_progress_type_3_row_xPosition", defaultEndProgressX);
+
+        editor.putInt("start_time_type_3_row_yPosition", defaultStartTime);
+        editor.putInt("end_time_type_3_row_yPosition", defaultEndTime);
+        editor.putFloat("start_progress_type_3_row_yPosition", defaultStartProgressX);
+        editor.putFloat("end_progress_type_3_row_yPosition", defaultEndProgressX);
+
+        editor.putInt("start_time_type_3_row_bubbleShape", defaultStartTime);
+        editor.putInt("end_time_type_3_row_bubbleShape", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_3_row_bubbleShape", defaultStartProgressX);
+        editor.putFloat("end_progress_type_3_row_bubbleShape", defaultEndProgressX);
+
+        editor.putInt("start_time_type_3_row_textScale", defaultStartTime);
+        editor.putInt("end_time_type_3_row_textScale", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_3_row_textScale", defaultStartProgressX);
+        editor.putFloat("end_progress_type_3_row_textScale", defaultEndProgressX);
+
+        editor.putInt("start_time_type_3_row_colorChange", defaultStartTime);
+        editor.putInt("end_time_type_3_row_colorChange", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_3_row_colorChange", defaultStartProgressX);
+        editor.putFloat("end_progress_type_3_row_colorChange", defaultEndProgressX);
+        
+        editor.putInt("start_time_type_3_row_timeAppears", defaultStartTime);
+        editor.putInt("end_time_type_3_row_timeAppears", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_3_row_timeAppears", defaultStartProgressX);
+        editor.putFloat("end_progress_type_3_row_timeAppears", defaultEndProgressX);
+
+        // Emoji
+        defaultDuration = 500;
+        defaultStartTime = 0;
+        defaultEndTime = 500;
+        defaultStartProgressX = 0.33f;
+        defaultEndProgressX = 1f;
+
+        editor.putInt("duration_type_4", defaultDuration);
+
+        editor.putInt("start_time_type_4_row_xPosition", defaultStartTime);
+        editor.putInt("end_time_type_4_row_xPosition", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_4_row_xPosition", defaultStartProgressX);
+        editor.putFloat("end_progress_type_4_row_xPosition", defaultEndProgressX);
+
+        editor.putInt("start_time_type_4_row_yPosition", defaultStartTime);
+        editor.putInt("end_time_type_4_row_yPosition", defaultEndTime);
+        editor.putFloat("start_progress_type_4_row_yPosition", defaultStartProgressX);
+        editor.putFloat("end_progress_type_4_row_yPosition", defaultEndProgressX);
+
+        editor.putInt("start_time_type_4_row_timeAppears", 85);
+        editor.putInt("end_time_type_4_row_timeAppears", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_4_row_timeAppears", defaultStartProgressX);
+        editor.putFloat("end_progress_type_4_row_timeAppears", defaultEndProgressX);
+
+        editor.putInt("start_time_type_4_row_emojiScale", 85);
+        editor.putInt("end_time_type_4_row_emojiScale", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_4_row_emojiScale", defaultStartProgressX);
+        editor.putFloat("end_progress_type_4_row_emojiScale", defaultEndProgressX);
+
+        editor.putInt("start_time_type_4_row_colorChange", 85);
+        editor.putInt("end_time_type_4_row_colorChange", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_4_row_colorChange", defaultStartProgressX);
+        editor.putFloat("end_progress_type_4_row_colorChange", defaultEndProgressX);
+
+        // Sticker
+        defaultDuration = 500;
+        defaultStartTime = 0;
+        defaultEndTime = 500;
+        defaultStartProgressX = 0.33f;
+        defaultEndProgressX = 1f;
+
+        editor.putInt("duration_type_5", defaultDuration);
+
+        editor.putInt("start_time_type_5_row_xPosition", defaultStartTime);
+        editor.putInt("end_time_type_5_row_xPosition", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_5_row_xPosition", defaultStartProgressX);
+        editor.putFloat("end_progress_type_5_row_xPosition", defaultEndProgressX);
+
+        editor.putInt("start_time_type_5_row_yPosition", defaultStartTime);
+        editor.putInt("end_time_type_5_row_yPosition", defaultEndTime);
+        editor.putFloat("start_progress_type_5_row_yPosition", defaultStartProgressX);
+        editor.putFloat("end_progress_type_5_row_yPosition", defaultEndProgressX);
+
+        editor.putInt("start_time_type_5_row_timeAppears", 85);
+        editor.putInt("end_time_type_5_row_timeAppears", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_5_row_timeAppears", defaultStartProgressX);
+        editor.putFloat("end_progress_type_5_row_timeAppears", defaultEndProgressX);
+
+        editor.putInt("start_time_type_5_row_stickerScale", 85);
+        editor.putInt("end_time_type_5_row_stickerScale", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_5_row_stickerScale", defaultStartProgressX);
+        editor.putFloat("end_progress_type_5_row_stickerScale", defaultEndProgressX);
+
+        editor.putInt("start_time_type_5_row_colorChange", 85);
+        editor.putInt("end_time_type_5_row_colorChange", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_5_row_colorChange", defaultStartProgressX);
+        editor.putFloat("end_progress_type_5_row_colorChange", defaultEndProgressX);
+        
+        // Voice
+        defaultDuration = 500;
+        defaultStartTime = 0;
+        defaultEndTime = 500;
+        defaultStartProgressX = 0.33f;
+        defaultEndProgressX = 1f;
+
+        editor.putInt("duration_type_6", defaultDuration);
+        editor.putInt("start_time_type_6_row_xPosition", defaultStartTime);
+        editor.putInt("end_time_type_6_row_xPosition", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_6_row_xPosition", defaultStartProgressX);
+        editor.putFloat("end_progress_type_6_row_xPosition", defaultEndProgressX);
+
+        editor.putInt("start_time_type_6_row_yPosition", defaultStartTime);
+        editor.putInt("end_time_type_6_row_yPosition", defaultEndTime);
+        editor.putFloat("start_progress_type_6_row_yPosition", defaultStartProgressX);
+        editor.putFloat("end_progress_type_6_row_yPosition", defaultEndProgressX);
+
+        editor.putInt("start_time_type_6_row_bubbleShape", defaultStartTime);
+        editor.putInt("end_time_type_6_row_bubbleShape", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_6_row_bubbleShape", defaultStartProgressX);
+        editor.putFloat("end_progress_type_6_row_bubbleShape", defaultEndProgressX);
+
+        editor.putInt("start_time_type_6_row_textScale", defaultStartTime);
+        editor.putInt("end_time_type_6_row_textScale", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_6_row_textScale", defaultStartProgressX);
+        editor.putFloat("end_progress_type_6_row_textScale", defaultEndProgressX);
+
+        editor.putInt("start_time_type_6_row_colorChange", defaultStartTime);
+        editor.putInt("end_time_type_6_row_colorChange", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_6_row_colorChange", defaultStartProgressX);
+        editor.putFloat("end_progress_type_6_row_colorChange", defaultEndProgressX);
+
+        editor.putInt("start_time_type_6_row_timeAppears", defaultStartTime);
+        editor.putInt("end_time_type_6_row_timeAppears", defaultEndTime / 2);
+        editor.putFloat("start_progress_type_6_row_timeAppears", defaultStartProgressX);
+        editor.putFloat("end_progress_type_6_row_timeAppears", defaultEndProgressX);
+        
+        // Video
+        defaultDuration = 500;
+        defaultStartTime = 100;
+        defaultEndTime = 500;
+        defaultStartProgressX = 0.33f;
+        defaultEndProgressX = 1f;
+
+        editor.putInt("duration_type_7", defaultDuration);
+
+        editor.putInt("start_time_type_7_row_xPosition", defaultStartTime);
+        editor.putInt("end_time_type_7_row_xPosition", defaultEndTime);
+        editor.putFloat("start_progress_type_7_row_xPosition", defaultStartProgressX);
+        editor.putFloat("end_progress_type_7_row_xPosition", defaultEndProgressX);
+
+        editor.putInt("start_time_type_7_row_yPosition", defaultStartTime);
+        editor.putInt("end_time_type_7_row_yPosition", defaultEndTime);
+        editor.putFloat("start_progress_type_7_row_yPosition", defaultStartProgressX);
+        editor.putFloat("end_progress_type_7_row_yPosition", defaultEndProgressX);
+        
+        editor.commit();
+    }
+
     public MessagesController(int num) {
         super(num);
         currentAccount = num;
@@ -699,10 +912,12 @@ public class MessagesController extends BaseController implements NotificationCe
             notificationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             emojiPreferences = ApplicationLoader.applicationContext.getSharedPreferences("emoji", Activity.MODE_PRIVATE);
+            messageAnimationPreferences = ApplicationLoader.applicationContext.getSharedPreferences("messageAnimation", Activity.MODE_PRIVATE);
         } else {
             notificationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications" + currentAccount, Activity.MODE_PRIVATE);
             mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig" + currentAccount, Activity.MODE_PRIVATE);
             emojiPreferences = ApplicationLoader.applicationContext.getSharedPreferences("emoji" + currentAccount, Activity.MODE_PRIVATE);
+            messageAnimationPreferences = ApplicationLoader.applicationContext.getSharedPreferences("messageAnimation" + currentAccount, Activity.MODE_PRIVATE);
         }
 
         enableJoined = notificationsPreferences.getBoolean("EnableContactJoined", true);
@@ -1893,6 +2108,10 @@ public class MessagesController extends BaseController implements NotificationCe
             editor.putInt("webFileDatacenterId", webFileDatacenterId);
             editor.putString("suggestedLangCode", suggestedLangCode);
             editor.commit();
+
+            if (getGlobalMessageAnimationSettings().getInt("duration_type_1", -1) == -1) {
+                resetGlobalMessageAnimationSettings();
+            }
 
             LocaleController.getInstance().checkUpdateForCurrentRemoteLocale(currentAccount, config.lang_pack_version, config.base_lang_pack_version);
             getNotificationCenter().postNotificationName(NotificationCenter.configLoaded);
