@@ -1898,6 +1898,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 LocaleController.getInstance().loadRemoteLanguages(currentAccount);
             }
             Theme.loadRemoteThemes(currentAccount, false);
+            Theme.loadRemoteChatThemes(currentAccount, false);
             Theme.checkCurrentRemoteTheme(false);
 
             if (config.static_maps_provider == null) {
@@ -4246,6 +4247,26 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         if (!unsave) {
             installTheme(themeInfo, accent, night);
+        }
+    }
+
+    public void saveChatTheme(Theme.ThemeInfo themeInfo, TLRPC.User user) {
+        if (user != null) {
+            TLRPC.TL_messages_setChatTheme req = new TLRPC.TL_messages_setChatTheme();
+            String emoticon = themeInfo != null && themeInfo.emoticon != null? themeInfo.emoticon: "";
+            req.emoticon = emoticon;
+            TLRPC.TL_inputPeerUser inputPeer = new TLRPC.TL_inputPeerUser();
+            inputPeer.user_id = user.id;
+            inputPeer.access_hash = user.access_hash;
+            req.peer = inputPeer;
+            getConnectionsManager().sendRequest(req, (response, error) -> {
+                TLRPC.UserFull userFull = getUserFull(user.id);
+                if (userFull != null) {
+                    userFull.theme_emoticon = emoticon;
+                    getMessagesStorage().updateUserInfo(userFull, false);
+                }
+            });
+            getConnectionsManager().resumeNetworkMaybe();
         }
     }
 

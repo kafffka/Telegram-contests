@@ -113,8 +113,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         addView(titleTextView);
 
         subtitleTextView = new SimpleTextView(context);
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
-        subtitleTextView.setTag(Theme.key_actionBarDefaultSubtitle);
+        subtitleTextView.setTextColor(Theme.getColor(Theme.key_chat_actionBarDefaultSubtitle));
+        subtitleTextView.setTag(Theme.key_chat_actionBarDefaultSubtitle);
         subtitleTextView.setTextSize(14);
         subtitleTextView.setGravity(Gravity.LEFT);
         addView(subtitleTextView);
@@ -343,7 +343,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (scam || fake) {
             if (!(titleTextView.getRightDrawable() instanceof ScamDrawable)) {
                 ScamDrawable drawable = new ScamDrawable(11, scam ? 0 : 1);
-                drawable.setColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
+                drawable.setColor(Theme.getColor(Theme.key_chat_actionBarDefaultSubtitle));
                 titleTextView.setRightDrawable(drawable);
             }
         } else if (titleTextView.getRightDrawable() instanceof ScamDrawable) {
@@ -575,7 +575,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             useOnlineColor = true;
             setTypingAnimation(true);
         }
-        lastSubtitleColorKey = useOnlineColor ? Theme.key_chat_status : Theme.key_actionBarDefaultSubtitle;
+        lastSubtitleColorKey = useOnlineColor ? Theme.key_chat_status : Theme.key_chat_actionBarDefaultSubtitle;
         if (lastSubtitle == null) {
             subtitleTextView.setText(newSubtitle);
             subtitleTextView.setTextColor(Theme.getColor(lastSubtitleColorKey));
@@ -729,8 +729,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 lastSubtitle = subtitleTextView.getText();
             }
             subtitleTextView.setText(title);
-            subtitleTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
-            subtitleTextView.setTag(Theme.key_actionBarDefaultSubtitle);
+            subtitleTextView.setTextColor(Theme.getColor(Theme.key_chat_actionBarDefaultSubtitle));
+            subtitleTextView.setTag(Theme.key_chat_actionBarDefaultSubtitle);
         }
     }
 

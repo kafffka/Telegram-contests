@@ -761,6 +761,18 @@ public class Theme {
                     accentsToLoad.add(accent);
                 }
             }
+            for (ThemeInfo chatThemeInfo: chatThemes) {
+                for (int a = 0, N = chatThemeInfo.themeAccents.size(); a < N; a++) {
+                    ThemeAccent accent = chatThemeInfo.themeAccents.get(a);
+                    if (accent.id == DEFALT_THEME_ACCENT_ID || TextUtils.isEmpty(accent.patternSlug)) {
+                        continue;
+                    }
+                    if (accentsToLoad == null) {
+                        accentsToLoad = new ArrayList<>();
+                    }
+                    accentsToLoad.add(accent);
+                }
+            }
             loader = new PatternsLoader(accentsToLoad);
         }
 
@@ -1107,7 +1119,7 @@ public class Theme {
                     }
                 }
             }
-            if (!isMyMessagesGradientColorsNear) {
+            if (!isMyMessagesGradientColorsNear || (isDarkTheme && info != null && info.for_chat)) {
                 if (myMessagesGradientAccentColor1 != 0) {
                     int textColor;
                     int subTextColor;
@@ -1205,8 +1217,69 @@ public class Theme {
                     currentColors.put(key_chat_outFileProgressSelected, myMessagesAccentColor);
                     currentColors.put(key_chat_outMediaIcon, myMessagesAccentColor);
                     currentColors.put(key_chat_outMediaIconSelected, myMessagesAccentColor);
+
+                    currentColors.put(key_chat_actionBarDefault, (int) backgroundGradientOverrideColor1);
                 }
             }
+            int backgroundOverride = (int) backgroundOverrideColor;
+
+            if (!isDarkTheme && info != null && info.for_chat && myMessagesGradientAccentColor1 != 0) {
+                int accentSecondary = ColorUtils.setAlphaComponent(accentColor, 116);
+
+                currentColors.put(key_chat_outAudioProgress, accentColor);
+                currentColors.put(key_chat_outAudioSelectedProgress, accentColor);
+                currentColors.put(key_chat_outAudioSeekbar, accentColor);
+                currentColors.put(key_chat_outAudioCacheSeekbar, accentColor);
+                currentColors.put(key_chat_outAudioSeekbarSelected, accentColor);
+                currentColors.put(key_chat_outAudioSeekbarFill, accentColor);
+
+                currentColors.put(key_chat_outVoiceSeekbar, accentSecondary);
+                currentColors.put(key_chat_outVoiceSeekbarSelected, accentColor);
+                currentColors.put(key_chat_outVoiceSeekbarFill, accentColor);
+
+                currentColors.put(key_chat_outSentCheck, accentColor);
+                currentColors.put(key_chat_outSentCheckSelected, accentColor);
+
+                currentColors.put(key_chat_outSentCheckRead, accentColor);
+                currentColors.put(key_chat_outSentCheckReadSelected, accentColor);
+
+                currentColors.put(key_chat_outSentClock, accentColor);
+                currentColors.put(key_chat_outSentClockSelected, accentColor);
+
+                currentColors.put(key_chat_outTimeText, accentSecondary);
+                currentColors.put(key_chat_outTimeSelectedText, accentSecondary);
+
+                currentColors.put(key_chat_outAudioDurationText, accentSecondary);
+                currentColors.put(key_chat_outAudioDurationSelectedText, accentSecondary);
+
+                currentColors.put(key_chat_outLoader, accentColor);
+                currentColors.put(key_chat_outLoaderSelected, accentColor);
+                currentColors.put(key_chat_outMediaIcon, accentColor);
+                currentColors.put(key_chat_outMediaIconSelected, accentColor);
+
+                currentColors.put(key_chat_actionBarDefault, (int) backgroundGradientOverrideColor1);
+            } else if(!isDarkTheme && info != null && info.for_chat) {
+                currentColors.put(key_chat_actionBarDefault, accentColor);
+            }
+
+            if (info != null && info.for_chat) {
+                int textColor;
+                int subTextColor;
+                int actionBarColor = getColor(Theme.key_chat_actionBarDefault);
+                boolean useBlackText = AndroidUtilities.computePerceivedBrightness(actionBarColor) > 0.705f;
+                if (useBlackText) {
+                    textColor = 0xff212121;
+                    subTextColor = 0xff555555;
+                } else {
+                    textColor = 0xffffffff;
+                    subTextColor = 0xffeeeeee;
+                }
+
+                currentColors.put(key_chat_actionBarDefaultTitle, textColor);
+                currentColors.put(key_chat_actionBarDefaultSubtitle, subTextColor);
+                currentColors.put(key_chat_actionBarDefaultIcon, textColor);
+            }
+
             if (isMyMessagesGradientColorsNear) {
                 int outColor = currentColors.get(key_chat_outLoader);
                 if (AndroidUtilities.getColorDistance(0xffffffff, outColor) < 5000) {
@@ -1224,7 +1297,7 @@ public class Theme {
                 }
                 currentColors.put(key_chat_outBubbleGradientAnimated, myMessagesAnimated ? 1 : 0);
             }
-            int backgroundOverride = (int) backgroundOverrideColor;
+
             if (backgroundOverride != 0) {
                 currentColors.put(key_chat_wallpaper, backgroundOverride);
             } else if (backgroundOverrideColor != 0) {
@@ -1523,6 +1596,7 @@ public class Theme {
         public ArrayList<ThemeAccent> themeAccents;
         public LongSparseArray<ThemeAccent> accentsByThemeId;
         public int lastAccentId = 100;
+        public String emoticon;
 
         private String loadingThemeWallpaperName;
         private String newPathToWallpaper;
@@ -1722,7 +1796,13 @@ public class Theme {
         }
 
         public boolean isDark() {
-            return "Dark Blue".equals(name) || "Night".equals(name);
+            String themeName;
+            if (info != null && info.for_chat) {
+                themeName = getBaseThemeKey(info.settings);
+            } else {
+                themeName = name;
+            }
+            return "Dark Blue".equals(themeName) || "Night".equals(themeName);
         }
 
         public boolean isLight() {
@@ -2181,17 +2261,24 @@ public class Theme {
     private static int loadingCurrentTheme;
     private static int lastLoadingCurrentThemeTime;
     private static boolean[] loadingRemoteThemes = new boolean[UserConfig.MAX_ACCOUNT_COUNT];
+    private static boolean[] loadingRemoteChatThemes = new boolean[UserConfig.MAX_ACCOUNT_COUNT];
     private static int[] lastLoadingThemesTime = new int[UserConfig.MAX_ACCOUNT_COUNT];
+    private static int[] lastLoadingChatThemesTime = new int[UserConfig.MAX_ACCOUNT_COUNT];
     private static int[] remoteThemesHash = new int[UserConfig.MAX_ACCOUNT_COUNT];
 
     public static ArrayList<ThemeInfo> themes;
     private static ArrayList<ThemeInfo> otherThemes;
+    public static ArrayList<ThemeInfo> chatThemes;
+    public static ArrayList<ThemeInfo> chatDarkThemes;
+    private static ThemeInfo previousChatTheme;
     private static HashMap<String, ThemeInfo> themesDict;
+    private static HashMap<String, ThemeInfo> chatThemesDict;
     private static ThemeInfo currentTheme;
     private static ThemeInfo currentNightTheme;
     private static ThemeInfo currentDayTheme;
     private static ThemeInfo defaultTheme;
     private static ThemeInfo previousTheme;
+    private static HashMap<Integer, ThemeInfo> currentChatThemesDict;
     private static boolean changingWallpaper;
     private static boolean hasPreviousTheme;
     private static boolean isApplyingAccent;
@@ -3036,6 +3123,10 @@ public class Theme {
     public static final String key_chat_inTextSelectionHighlight = "chat_inTextSelectionHighlight";
     public static final String key_chat_recordedVoiceHighlight = "key_chat_recordedVoiceHighlight";
     public static final String key_chat_TextSelectionCursor = "chat_TextSelectionCursor";
+    public static final String key_chat_actionBarDefault = "chat_actionBarDefault";
+    public static final String key_chat_actionBarDefaultTitle = "chat_actionBarDefaultTitle";
+    public static final String key_chat_actionBarDefaultSubtitle = "chat_actionBarDefaultSubtitle";
+    public static final String key_chat_actionBarDefaultIcon = "chat_actionBarDefaultIcon";
 
     public static final String key_voipgroup_listSelector = "voipgroup_listSelector";
     public static final String key_voipgroup_inviteMembersBackground = "voipgroup_inviteMembersBackground";
@@ -4180,6 +4271,10 @@ public class Theme {
 
         fallbackKeys.put(key_chat_outAdminText, key_chat_outTimeText);
         fallbackKeys.put(key_chat_outAdminSelectedText, key_chat_outTimeSelectedText);
+        fallbackKeys.put(key_chat_actionBarDefault, key_actionBarDefault);
+        fallbackKeys.put(key_chat_actionBarDefaultTitle, key_actionBarDefaultTitle);
+        fallbackKeys.put(key_chat_actionBarDefaultSubtitle, key_actionBarDefaultSubtitle);
+        fallbackKeys.put(key_chat_actionBarDefaultIcon, key_actionBarDefaultIcon);
 
         fallbackKeys.put(key_returnToCallMutedBackground, key_windowBackgroundWhite);
         fallbackKeys.put(key_dialogSwipeRemove, key_avatar_backgroundRed);
@@ -4339,7 +4434,10 @@ public class Theme {
 
         themes = new ArrayList<>();
         otherThemes = new ArrayList<>();
+        chatThemes = new ArrayList<>();
+        chatDarkThemes = new ArrayList<>();
         themesDict = new HashMap<>();
+        chatThemesDict = new HashMap<>();
         currentColorsNoAccent = new HashMap<>();
         currentColors = new HashMap<>();
 
@@ -5432,6 +5530,13 @@ public class Theme {
         previousTheme = null;
     }
 
+    public static void clearPreviousChatTheme() {
+        if (previousChatTheme == null) {
+            return;
+        }
+        previousChatTheme = null;
+    }
+
     private static void sortThemes() {
         Collections.sort(themes, (o1, o2) -> {
             if (o1.pathToFile == null && o1.assetName == null) {
@@ -5711,6 +5816,9 @@ public class Theme {
                     themeInfo.pathToWallpaper = null;
                     themedWallpaperLink = null;
                 }
+            } else if (themeInfo.info.for_chat) {
+                applyChatEmoticonTheme(themeInfo);
+                return;
             } else {
                 if (!nightTheme && save) {
                     SharedPreferences preferences = MessagesController.getGlobalMainSettings();
@@ -5742,6 +5850,104 @@ public class Theme {
         }
     }
 
+    private static Drawable chatWallpaper;
+    public static int currentUserId = -1;
+    public static String currentUserEmoticon;
+
+    public static void setCurrentUserId(int chatId) {
+        currentUserId = chatId;
+    }
+
+    public static void resetCurrentUserChatTheme() {
+        currentColors.remove(key_chat_actionBarDefault);
+        currentColors.remove(key_chat_actionBarDefaultTitle);
+        currentColors.remove(key_chat_actionBarDefaultSubtitle);
+        currentColors.remove(key_chat_actionBarDefaultIcon);
+        previousChatTheme = null;
+        currentUserId = -1;
+        chatWallpaper = null;
+        currentUserEmoticon = null;
+    }
+
+    public static void applyChatThemeTemporary(ThemeInfo themeInfo) {
+        if (previousChatTheme == null) {
+            previousChatTheme = getCurrentChatTheme();
+        }
+        applyChatEmoticonTheme(themeInfo);
+    }
+
+    public static ThemeInfo getChatThemeForEmoticon(String emoticon) {
+        if (emoticon != null && !emoticon.isEmpty()) {
+            ArrayList<Theme.ThemeInfo> themes = Theme.isCurrentThemeDark()? Theme.chatDarkThemes : Theme.chatThemes;
+            for (int i = 0; i < themes.size(); i++) {
+                if (themes.get(i).emoticon.equals(emoticon)) {
+                    return themes.get(i);
+                }
+            }
+        }
+        return null;
+    }
+
+    public static void applyNotUserChatTheme() {
+        currentColors.remove(key_chat_actionBarDefault);
+        currentColors.remove(key_chat_actionBarDefaultTitle);
+        currentColors.remove(key_chat_actionBarDefaultSubtitle);
+        currentColors.remove(key_chat_actionBarDefaultIcon);
+        resetCurrentUserChatTheme();
+        refreshThemeColors();
+    }
+
+    public static boolean isApplyingChatTheme = false;
+
+    public static void applyChatEmoticonTheme(ThemeInfo themeInfo) {
+        if (themeInfo == null) {
+            return;
+        }
+        isApplyingChatTheme = true;
+        if (currentChatThemesDict == null) {
+            currentChatThemesDict = new HashMap<>();
+        }
+        try {
+            if (themeInfo.info.for_chat && (!currentChatThemesDict.containsKey(currentUserId) || currentChatThemesDict.get(currentUserId) != themeInfo)) {
+                Theme.ThemeAccent themeAccent = themeInfo.themeAccents.get(0);
+                String[] wallpaperLink = new String[1];
+                String key = getBaseThemeKey(themeInfo.info.settings);
+
+                ThemeInfo info = themesDict.get(key);
+
+                if (info != null && info.assetName != null) {
+                    currentColorsNoAccent = getThemeFileValues(null, info.assetName, wallpaperLink);
+                }
+
+                int messageInColor = Theme.getDefaultColor(Theme.key_chat_inBubble);
+
+                float[] hsvTemp1 = Theme.getTempHsv(1);
+                Color.colorToHSV(info.accentBaseColor, hsvTemp1);
+                int color = Theme.getDefaultColor(Theme.key_chat_outBubble);
+                int firstColor = themeAccent.myMessagesAccentColor != 0 ? themeAccent.myMessagesAccentColor : themeAccent.accentColor;
+                int myMessagesAccent = Theme.getAccentColor(hsvTemp1, color, firstColor);
+
+                themeInfo.setPreviewInColor(messageInColor);
+                themeInfo.setPreviewOutColor(myMessagesAccent);
+
+                themeInfo.accentBaseColor = (int) themeAccent.accentColor;
+                themeInfo.setPreviewBackgroundColor((int) themeAccent.backgroundOverrideColor);
+                themeInfo.previewBackgroundGradientColor1 = (int) themeAccent.backgroundGradientOverrideColor1;
+                themeInfo.previewBackgroundGradientColor2 = (int) themeAccent.backgroundGradientOverrideColor2;
+                themeInfo.previewBackgroundGradientColor3 = (int) themeAccent.backgroundGradientOverrideColor3;
+                themeInfo.patternIntensity = (int) themeAccent.patternIntensity;
+                themeInfo.pathToWallpaper = themeAccent.getPathToWallpaper().getAbsolutePath();
+            }
+
+            currentChatThemesDict.put(currentUserId, themeInfo);
+
+            refreshThemeColors(false, false, themeInfo.getAccent(false));
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        isApplyingChatTheme = false;
+    }
+
     private static boolean useBlackText(int color1, int color2) {
         float r1 = Color.red(color1) / 255.0f;
         float r2 = Color.red(color2) / 255.0f;
@@ -5763,10 +5969,14 @@ public class Theme {
     }
 
     public static void refreshThemeColors(boolean bg, boolean messages) {
+        ThemeAccent accent = currentTheme.getAccent(false);
+        refreshThemeColors(bg, messages, accent);
+    }
+
+    public static void refreshThemeColors(boolean bg, boolean messages, ThemeAccent accent) {
         currentColors.clear();
         currentColors.putAll(currentColorsNoAccent);
         shouldDrawGradientIcons = true;
-        ThemeAccent accent = currentTheme.getAccent(false);
         if (accent != null) {
             shouldDrawGradientIcons = accent.fillAccentColors(currentColorsNoAccent, currentColors);
         }
@@ -5792,7 +6002,7 @@ public class Theme {
         return changeColorAccent(hsvTemp3, hsvTemp4, color, themeInfo.isDark());
     }
 
-    private static float[] getTempHsv(int num) {
+    public static float[] getTempHsv(int num) {
         ThreadLocal<float[]> local;
         switch (num) {
             case 1:
@@ -5820,7 +6030,7 @@ public class Theme {
         return hsvTemp;
     }
 
-    private static int getAccentColor(float[] baseHsv, int baseColor, int elementColor) {
+    public static int getAccentColor(float[] baseHsv, int baseColor, int elementColor) {
         float[] hsvTemp3 = getTempHsv(3);
         float[] hsvTemp4 = getTempHsv(4);
         Color.colorToHSV(baseColor, hsvTemp3);
@@ -6058,6 +6268,10 @@ public class Theme {
         return previousTheme;
     }
 
+    public static ThemeInfo getPreviousChatTheme() {
+        return previousChatTheme;
+    }
+
     public static String getCurrentThemeName() {
         String text = currentDayTheme.getName();
         if (text.toLowerCase().endsWith(".attheme")) {
@@ -6079,6 +6293,13 @@ public class Theme {
 
     public static ThemeInfo getCurrentTheme() {
         return currentDayTheme != null ? currentDayTheme : defaultTheme;
+    }
+
+    public static ThemeInfo getCurrentChatTheme() {
+        if (currentChatThemesDict != null) {
+            return currentChatThemesDict.get(currentUserId);
+        }
+        return null;
     }
 
     public static ThemeInfo getCurrentNightTheme() {
@@ -6703,6 +6924,79 @@ public class Theme {
                 if (loadPatterns) {
                     PatternsLoader.createLoader(true);
                 }
+            }
+        }));
+    }
+
+    public static void loadRemoteChatThemes(final int currentAccount, boolean force) {
+        if (loadingRemoteChatThemes[currentAccount] || !force && Math.abs(System.currentTimeMillis() / 1000 - lastLoadingChatThemesTime[currentAccount]) < 60 * 60 || !UserConfig.getInstance(currentAccount).isClientActivated()) {
+            return;
+        }
+        loadingRemoteChatThemes[currentAccount] = true;
+        TLRPC.TL_account_getChatThemes req = new TLRPC.TL_account_getChatThemes();
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (response instanceof TLRPC.TL_account_chatThemes) {
+                TLRPC.TL_account_chatThemes res = (TLRPC.TL_account_chatThemes) response;
+                lastLoadingChatThemesTime[currentAccount] = (int) (System.currentTimeMillis() / 1000);
+                boolean loadPatterns = false;
+                for (int a = 0, N = res.themes.size(); a < N; a++) {
+                    TLRPC.TL_chatTheme chatTheme = res.themes.get(a);
+                    for (int i = 0; i < 2; i++) {
+                        boolean isDark = i == 0;
+                        TLRPC.TL_theme theme =  isDark? (TLRPC.TL_theme) chatTheme.dark_theme : (TLRPC.TL_theme) chatTheme.theme;
+                        if (theme.settings != null) {
+                            String key = "remote" + theme.id;
+                            ThemeInfo info = chatThemesDict.get(key);
+                            if (info == null) {
+                                info = new ThemeInfo();
+                                info.account = currentAccount;
+                                if (isDark) {
+                                    chatDarkThemes.add(info);
+                                } else {
+                                    chatThemes.add(info);
+                                }
+                            }
+                            info.name = theme.title;
+                            info.info = theme;
+                            info.emoticon = chatTheme.emoticon;
+
+                            chatThemesDict.put(info.getKey(), info);
+
+                            if (info.themeAccents == null) {
+                                info.themeAccents = new ArrayList<>();
+                                info.themeAccentsMap = new SparseArray<>();
+                                info.accentsByThemeId = new LongSparseArray<>();
+                            }
+
+                            ThemeAccent accent = info.accentsByThemeId.get(theme.id);
+                            if (accent != null) {
+                                if (!ThemeInfo.accentEquals(accent, theme.settings)) {
+                                    File file = accent.getPathToWallpaper();
+                                    if (file != null) {
+                                        file.delete();
+                                    }
+                                    ThemeInfo.fillAccentValues(accent, theme.settings);
+                                    loadPatterns = true;
+                                }
+                                accent.patternMotion = theme.settings.wallpaper != null && theme.settings.wallpaper.settings != null && theme.settings.wallpaper.settings.motion;
+                            } else {
+                                accent = info.createNewAccent(theme, currentAccount);
+                                info.firstAccentIsDefault = true;
+                                info.currentAccentId = accent.id;
+                                if (!TextUtils.isEmpty(accent.patternSlug)) {
+                                    loadPatterns = true;
+                                }
+                            }
+                            info.loadThemeDocument();
+                        }
+                    }
+                }
+
+                if (loadPatterns) {
+                    PatternsLoader.createLoader(true);
+                }
+
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.themeListUpdated);
             }
         }));
     }
@@ -8639,6 +8933,8 @@ public class Theme {
         }
         wallpaper = null;
         themedWallpaper = null;
+        chatWallpaper = null;
+        loadChatWallpaper();
         loadWallpaper();
     }
 
@@ -8655,6 +8951,81 @@ public class Theme {
     public static int getServiceMessageColor() {
         Integer serviceColor = currentColors.get(key_chat_serviceBackground);
         return serviceColor == null ? serviceMessageColor : serviceColor;
+    }
+
+    public static void loadChatWallpaper() {
+        if (currentUserId == -1 || currentUserEmoticon == null || currentUserEmoticon.isEmpty()) {
+            return;
+        }
+
+        ThemeInfo themeInfo = getCurrentChatTheme();
+        if (themeInfo == null) {
+            return;
+        }
+
+        File wallpaperFile;
+        boolean wallpaperMotion;
+        ThemeAccent accent = themeInfo.getAccent(false);
+        if (accent != null) {
+            wallpaperFile = accent.getPathToWallpaper();
+            wallpaperMotion = accent.patternMotion;
+        } else {
+            wallpaperFile = null;
+            wallpaperMotion = false;
+        }
+        int intensity;
+        OverrideWallpaperInfo overrideWallpaper = themeInfo.overrideWallpaper;
+        if (overrideWallpaper != null) {
+            intensity = (int) (overrideWallpaper.intensity * 100);
+        } else {
+            intensity = (int) (accent != null ? (accent.patternIntensity * 100) : themeInfo.patternIntensity);
+        }
+
+        Utilities.searchQueue.postRunnable(wallpaperLoadTask = () -> {
+            boolean overrideTheme = (!hasPreviousTheme || isApplyingAccent) && overrideWallpaper != null;
+            if (overrideWallpaper != null) {
+                isWallpaperMotion = overrideWallpaper.isMotion;
+                isPatternWallpaper = overrideWallpaper.color != 0 && !overrideWallpaper.isDefault() && !overrideWallpaper.isColor();
+            } else {
+                isWallpaperMotion = themeInfo.isMotion;
+                isPatternWallpaper = themeInfo.patternBgColor != 0;
+            }
+            patternIntensity = intensity;
+            if (!overrideTheme) {
+                Integer backgroundColor = currentColors.get(key_chat_wallpaper);
+                Integer gradientToColor3 = currentColors.get(key_chat_wallpaper_gradient_to3);
+                if (gradientToColor3 == null) {
+                    gradientToColor3 = 0;
+                }
+                Integer gradientToColor2 = currentColors.get(key_chat_wallpaper_gradient_to2);
+                Integer gradientToColor1 = currentColors.get(key_chat_wallpaper_gradient_to1);
+                if (wallpaperFile != null && wallpaperFile.exists()) {
+                    try {
+                        if (backgroundColor != null && gradientToColor1 != null && gradientToColor2 != null) {
+                            MotionBackgroundDrawable motionBackgroundDrawable = new MotionBackgroundDrawable(backgroundColor, gradientToColor1, gradientToColor2, gradientToColor3, false);
+                            motionBackgroundDrawable.setPatternBitmap(patternIntensity, BitmapFactory.decodeFile(wallpaperFile.getAbsolutePath()));
+                            chatWallpaper = motionBackgroundDrawable;
+                        } else {
+                            chatWallpaper = Drawable.createFromPath(wallpaperFile.getAbsolutePath());
+                        }
+                        isWallpaperMotion = wallpaperMotion;
+                        isCustomTheme = true;
+                        isPatternWallpaper = true;
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
+                } else if (backgroundColor != null) {
+                    if (gradientToColor1 != null && gradientToColor2 != null) {
+                        chatWallpaper = new MotionBackgroundDrawable(backgroundColor, gradientToColor1, gradientToColor2, gradientToColor3, false);
+                    }
+                }
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                wallpaperLoadTask = null;
+                createCommonChatResources();
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewWallpapper);
+            });
+        });
     }
 
     public static void loadWallpaper() {
@@ -9071,6 +9442,32 @@ public class Theme {
         } else {
             return wallpaper;
         }
+    }
+    public static Drawable getCachedChatWallpaperNonBlocking() {
+        if (currentUserId == -1 || chatWallpaper == null) {
+            return getCachedWallpaperNonBlocking();
+        } else {
+            return chatWallpaper;
+        }
+    }
+
+    public static Drawable getCachedChatWallpaper() {
+        if (currentUserId == -1 || currentUserEmoticon == null || currentUserEmoticon.isEmpty()) {
+            return getCachedWallpaper();
+        }
+
+        Drawable drawable = chatWallpaper;
+        if (drawable == null && wallpaperLoadTask != null) {
+            CountDownLatch countDownLatch = new CountDownLatch(1);
+            Utilities.searchQueue.postRunnable(countDownLatch::countDown);
+            try {
+                countDownLatch.await();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            drawable = chatWallpaper;
+        }
+        return drawable;
     }
 
     public static boolean isWallpaperMotion() {

@@ -199,6 +199,7 @@ public class NotificationCenter {
     public static final int needCheckSystemBarColors = totalEvents++;
     public static final int needShareTheme = totalEvents++;
     public static final int needSetDayNightTheme = totalEvents++;
+    public static final int needSetDayNightChatTheme = totalEvents++;
     public static final int goingToPreviewTheme = totalEvents++;
     public static final int locationPermissionGranted = totalEvents++;
     public static final int reloadInterface = totalEvents++;

@@ -257,6 +257,10 @@ public class ActionBarLayout extends FrameLayout {
     private Theme.ThemeInfo animateSetThemeAfterAnimation;
     private boolean animateSetThemeNightAfterAnimation;
     private int animateSetThemeAccentIdAfterAnimation;
+    private boolean animateChatThemeAfterAnimation;
+    private Theme.ThemeInfo animateSetChatThemeAfterAnimation;
+    private int animateSetChatThemeAccentIdAfterAnimation;
+    private String animateSetEmoticonChatThemeAfterAnimation;
     private boolean rebuildAfterAnimation;
     private boolean rebuildLastAfterAnimation;
     private boolean showLastAfterAnimation;
@@ -1779,6 +1783,69 @@ public class ActionBarLayout extends FrameLayout {
         }
     }
 
+    public void setChatThemedValues(Theme.ThemeInfo theme, int accentId, String emoticon, boolean temporary) {
+        if (Theme.isApplyingChatTheme) {
+            return;
+        }
+        if (transitionAnimationInProgress || startedTracking) {
+            animateChatThemeAfterAnimation = true;
+            animateSetChatThemeAfterAnimation = theme;
+            animateSetChatThemeAccentIdAfterAnimation = accentId;
+            animateSetEmoticonChatThemeAfterAnimation = emoticon;
+            return;
+        }
+        if (emoticon != null) {
+            Theme.currentUserEmoticon = emoticon;
+        }
+        for (int i = 0; i < 2; i++) {
+            BaseFragment fragment;
+            if (i == 0) {
+                fragment = getLastFragment();
+            } else {
+                if (!inPreviewMode && !transitionAnimationPreviewMode || fragmentsStack.size() <= 1) {
+                    continue;
+                }
+                fragment = fragmentsStack.get(fragmentsStack.size() - 2);
+            }
+            if (fragment != null) {
+                ArrayList<ThemeDescription> descriptions = fragment.getThemeDescriptions();
+                addStartDescriptions(descriptions);
+                if (fragment.visibleDialog instanceof BottomSheet) {
+                    BottomSheet sheet = (BottomSheet) fragment.visibleDialog;
+                    addStartDescriptions(sheet.getThemeDescriptions());
+                } else if (fragment.visibleDialog instanceof AlertDialog) {
+                    AlertDialog dialog = (AlertDialog) fragment.visibleDialog;
+                    addStartDescriptions(dialog.getThemeDescriptions());
+                }
+                if (i == 0) {
+                    if (accentId != -1) {
+                        theme.setCurrentAccentId(accentId);
+                        Theme.saveThemeAccents(theme, true, false, true, false);
+                    }
+                    if (temporary) {
+                        Theme.applyChatThemeTemporary(theme);
+                    } else {
+                        Theme.applyChatEmoticonTheme(theme);
+                        Theme.clearPreviousChatTheme();
+                    }
+                }
+                addEndDescriptions(descriptions);
+                if (fragment.visibleDialog instanceof BottomSheet) {
+                    addEndDescriptions(((BottomSheet) fragment.visibleDialog).getThemeDescriptions());
+                } else if (fragment.visibleDialog instanceof AlertDialog) {
+                    addEndDescriptions(((AlertDialog) fragment.visibleDialog).getThemeDescriptions());
+                }
+            }
+        }
+        int count = fragmentsStack.size() - (inPreviewMode || transitionAnimationPreviewMode ? 2 : 1);
+        for (int a = 0; a < count; a++) {
+            BaseFragment fragment = fragmentsStack.get(a);
+            fragment.clearViews();
+            fragment.setParentLayout(this);
+        }
+        setThemeAnimationValue(1.0f);
+    }
+
     public void rebuildAllFragmentViews(boolean last, boolean showLastAfter) {
         if (transitionAnimationInProgress || startedTracking) {
             rebuildAfterAnimation = true;
@@ -1850,6 +1917,12 @@ public class ActionBarLayout extends FrameLayout {
             animateThemedValues(animateSetThemeAfterAnimation, animateSetThemeAccentIdAfterAnimation, animateSetThemeNightAfterAnimation, false);
             animateSetThemeAfterAnimation = null;
             animateThemeAfterAnimation = false;
+        } else if (animateChatThemeAfterAnimation) {
+            setChatThemedValues(animateSetChatThemeAfterAnimation, animateSetChatThemeAccentIdAfterAnimation, animateSetEmoticonChatThemeAfterAnimation, false);
+            animateSetThemeAfterAnimation = null;
+            animateSetChatThemeAccentIdAfterAnimation = -1;
+            animateSetEmoticonChatThemeAfterAnimation = null;
+            animateChatThemeAfterAnimation = false;
         }
     }
 

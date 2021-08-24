@@ -916,6 +916,7 @@
     <string name="ChatVideo">Video</string>
     <string name="ChatDocument">File</string>
     <string name="ChatCamera">Camera</string>
+    <string name="ChangeColors">Change colors</string>
     <string name="NoMessages">No messages here yet...</string>
     <string name="NoScheduledMessages">No scheduled messages here yet...</string>
     <string name="ForwardedMessage">Forwarded message</string>
@@ -950,6 +951,8 @@
     <string name="ShareFile">Share</string>
     <string name="ApplyLocalizationFile">Apply localization file</string>
     <string name="ApplyThemeFile">Apply theme file</string>
+    <string name="SelectTheme">Select theme</string>
+    <string name="ApplyChatTheme">Apply theme</string>
     <string name="UnsupportedAttachment">Unsupported attachment</string>
     <string name="SetTimer">Set self-destruct timer</string>
     <string name="ServiceNotifications">Service notifications</string>
@@ -1283,6 +1286,8 @@
     <string name="NotificationUnrecognizedDevice">%1$s,\nWe detected a login into your account from a new device on %2$s\n\nDevice: %3$s\nLocation: %4$s\n\nIf this wasn\'t you, you can go to Settings - Privacy and Security - Sessions and terminate that session.\n\nIf you think that somebody logged in to your account against your will, you can enable two-step verification in Privacy and Security settings.\n\nSincerely,\nThe Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s updated profile photo</string>
     <string name="NotificationInvitedToGroupByLink">%1$s joined to the group %2$s via invite link</string>
+    <string name="NotificationSetChatTheme">%1$s changed chat theme to %2$s</string>
+    <string name="NotificationResetChatTheme">%1$s reset chat theme</string>
     <string name="NotificationGroupFew">%1$s sent %3$s to the group %2$s</string>
     <string name="NotificationGroupAlbum">%1$s sent an album to the group %2$s</string>
     <string name="NotificationGroupForwardedFew">%1$s forwarded %3$s to the group %2$s</string>
@@ -3121,6 +3126,10 @@
     <string name="ActionTTLDisabled">un1 disabled the auto-delete timer</string>
     <string name="ActionTTLYouDisabled">You disabled the auto-delete timer</string>
     <string name="ActionInviteUser">un1 joined the group via invite link</string>
+    <string name="ActionSetChatTheme">un1 changed chat theme to %1$s</string>
+    <string name="ActionResetChatTheme">un1 reset chat theme</string>
+    <string name="ActionSetChatThemeYou">You changed chat theme to %1$s</string>
+    <string name="ActionResetChatThemeYou">You reset chat theme</string>
     <string name="ActionKickUser">un1 removed un2</string>
     <string name="ActionLeftUser">un1 left the group</string>
     <string name="ActionAddUser">un1 added un2</string>

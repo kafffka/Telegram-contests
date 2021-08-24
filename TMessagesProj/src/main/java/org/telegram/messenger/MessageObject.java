@@ -2643,6 +2643,21 @@ public class MessageObject {
                     } else {
                         messageText = replaceWithLink(LocaleController.getString("ActionInviteUser", R.string.ActionInviteUser), "un1", fromObject);
                     }
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionSetChatTheme) {
+                    String emoticon = ((TLRPC.TL_messageActionSetChatTheme) messageOwner.action).emoticon;
+                    if (isOut()) {
+                        if (emoticon == null || emoticon.isEmpty()) {
+                            messageText = LocaleController.formatString("ActionResetChatThemeYou", R.string.ActionResetChatThemeYou);
+                        } else {
+                            messageText = LocaleController.formatString("ActionSetChatThemeYou", R.string.ActionSetChatThemeYou, emoticon);
+                        }
+                    } else {
+                        if (emoticon == null || emoticon.isEmpty()) {
+                            messageText = replaceWithLink(LocaleController.formatString("ActionResetChatTheme", R.string.ActionResetChatTheme), "un1", fromObject);
+                        } else {
+                            messageText = replaceWithLink(LocaleController.formatString("ActionSetChatTheme", R.string.ActionSetChatTheme, emoticon), "un1", fromObject);
+                        }
+                    }
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionChatEditPhoto) {
                     TLRPC.Chat chat = messageOwner.peer_id != null && messageOwner.peer_id.channel_id != 0 ? getChat(chats, sChats, messageOwner.peer_id.channel_id) : null;
                     if (ChatObject.isChannel(chat) && !chat.megagroup) {

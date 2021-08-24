@@ -39,6 +39,7 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.RippleDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -75,6 +76,7 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -152,6 +154,7 @@ import org.telegram.ui.Cells.BotSwitchCell;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatLoadingCell;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Cells.ChatThemesHorizontalListCell;
 import org.telegram.ui.Cells.ChatUnreadCell;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.ContextLinkCell;
@@ -201,6 +204,7 @@ import org.telegram.ui.Components.PinnedLineView;
 import org.telegram.ui.Components.PipRoundVideoView;
 import org.telegram.ui.Components.PollVotesAlert;
 import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerAnimationScrollHelper;
 import org.telegram.ui.Components.RecyclerListView;
@@ -1096,6 +1100,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private final static int delete_chat = 16;
     private final static int share_contact = 17;
     private final static int mute = 18;
+    private final static int change_colors = 19;
     private final static int report = 21;
     private final static int star = 22;
     private final static int edit = 23;
@@ -1418,6 +1423,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             return false;
         }
 
+        if (currentUser != null) {
+            Theme.setCurrentUserId(userId);
+            Theme.loadRemoteChatThemes(currentAccount, false);
+        } else {
+            Theme.applyNotUserChatTheme();
+        }
+
         if (currentUser != null && Build.VERSION.SDK_INT < 23) {
             MediaController.getInstance().startMediaObserver();
         }
@@ -1490,6 +1502,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewWallpapper);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didApplyNewTheme);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.goingToPreviewTheme);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.needSetDayNightChatTheme);
         getNotificationCenter().addObserver(this, NotificationCenter.channelRightsUpdated);
         getNotificationCenter().addObserver(this, NotificationCenter.audioRecordTooShort);
         getNotificationCenter().addObserver(this, NotificationCenter.didUpdateReactions);
@@ -1774,6 +1787,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewWallpapper);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didApplyNewTheme);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.goingToPreviewTheme);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needSetDayNightChatTheme);
         getNotificationCenter().removeObserver(this, NotificationCenter.channelRightsUpdated);
         getNotificationCenter().removeObserver(this, NotificationCenter.updateMentionsCount);
         getNotificationCenter().removeObserver(this, NotificationCenter.audioRecordTooShort);
@@ -1830,6 +1844,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (pinchToZoomHelper != null) {
             pinchToZoomHelper.clear();
         }
+        Theme.resetCurrentUserChatTheme();
     }
 
     @Override
@@ -1847,6 +1862,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), false);
             actionBar.setTitleColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
             actionBar.setSubtitleColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
+        } else {
+            actionBar.setBackgroundColor(Theme.getColor(Theme.key_chat_actionBarDefault));
+            actionBar.setItemsColor(Theme.getColor(Theme.key_chat_actionBarDefaultIcon), false);
         }
 
         if (chatMessageCellsCache.isEmpty()) {
@@ -2047,6 +2065,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 } else if (id == mute) {
                     toggleMute(false);
+                } else if (id == change_colors) {
+                    if (currentUser == null || getParentActivity() == null) {
+                        return;
+                    }
+                    openChangeColorsDialog();
                 } else if (id == add_shortcut) {
                     try {
                         getMediaDataController().installShortcut(currentUser.id);
@@ -2370,6 +2393,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             if (currentUser != null) {
                 addContactItem = headerItem.addSubItem(share_contact, R.drawable.msg_addcontact, "");
+            }
+            if (currentUser != null) {
+                headerItem.addSubItem(change_colors, R.drawable.msg_colors, LocaleController.getString("ChangeColors", R.string.ChangeColors));
             }
             if (currentEncryptedChat != null) {
                 timeItem2 = headerItem.addSubItem(chat_enc_timer, R.drawable.msg_timer, LocaleController.getString("SetTimer", R.string.SetTimer));
@@ -3375,7 +3401,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             contentView.setOccupyStatusBar(false);
         }
 
-        contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
+        contentView.setBackgroundImage(Theme.getCachedChatWallpaper(), Theme.isWallpaperMotion());
 
         emptyViewContainer = new FrameLayout(context);
         emptyViewContainer.setVisibility(View.INVISIBLE);
@@ -7687,7 +7713,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         searchingForUser = false;
         String from = LocaleController.getString("SearchFrom", R.string.SearchFrom);
         Spannable spannable = new SpannableString(from + " " + name);
-        spannable.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_actionBarDefaultSubtitle)), from.length() + 1, spannable.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        spannable.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_chat_actionBarDefaultSubtitle)), from.length() + 1, spannable.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         searchItem.setSearchFieldCaption(spannable);
         mentionsAdapter.searchUsernameOrHashtag(null, 0, null, false, true);
         searchItem.setSearchFieldHint(null);
@@ -11187,6 +11213,64 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 BulletinFactory.createMuteBulletin(this, false).show();
             }
         }
+    }
+
+    private void openChangeColorsDialog() {
+        BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+        LinearLayout container = new LinearLayout(getParentActivity());
+        container.setOrientation(LinearLayout.VERTICAL);
+
+        TextView titleView = new TextView(getParentActivity());
+        titleView.setText(LocaleController.getString("SelectTheme", R.string.SelectTheme));
+        titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+        titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        container.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 16, 16, 0, 0));
+
+        ArrayList<Theme.ThemeInfo> themes = new ArrayList<>();
+        if (Theme.isCurrentThemeDark()) {
+            themes.addAll(Theme.chatDarkThemes);
+        } else {
+            themes.addAll(Theme.chatThemes);
+        }
+        final Theme.ThemeInfo[] info = new Theme.ThemeInfo[1];
+        ChatThemesHorizontalListCell cell = new ChatThemesHorizontalListCell(getParentActivity(), themes) {
+            @Override
+            public void selectTheme(Theme.ThemeInfo themeInfo) {
+                super.selectTheme(themeInfo);
+                info[0] = themeInfo;
+            }
+        };
+        container.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 113, 0, 8, 0, 0));
+
+        TextView buttonTextView = new TextView(getParentActivity()) {
+            @Override
+            public CharSequence getAccessibilityClassName() {
+                return Button.class.getName();
+            }
+        };
+        buttonTextView.setGravity(Gravity.CENTER);
+        buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+        buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        buttonTextView.setText(LocaleController.getString("ApplyChatTheme", R.string.ApplyChatTheme));
+        buttonTextView.setOnClickListener(v -> {
+            Theme.clearPreviousChatTheme();
+            MessagesController.getInstance(currentAccount).saveChatTheme(info[0], currentUser);
+            builder.getDismissRunnable().run();
+        });
+        container.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 16, 14, 16, 16));
+
+        builder.setCustomView(container);
+        BottomSheet bottomSheet = builder.create();
+        bottomSheet.setOnHideListener(dialogInterface -> {
+            Theme.ThemeInfo previousChatTheme = Theme.getPreviousChatTheme();
+            if (previousChatTheme != null) {
+                getParentLayout().setChatThemedValues(previousChatTheme, previousChatTheme.currentAccentId, userInfo.theme_emoticon, false);
+            }
+        });
+        showDialog(bottomSheet);
     }
 
     private int getScrollOffsetForMessage(MessageObject object) {
@@ -15192,10 +15276,17 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     getMediaDataController().loadPinnedMessages(dialog_id, 0, userInfo.pinned_msg_id);
                     loadingPinnedMessagesList = true;
                 }
+
+                Theme.ThemeInfo themeInfo = Theme.getChatThemeForEmoticon(userInfo.theme_emoticon);
+                if (themeInfo != null) {
+                    getParentLayout().setChatThemedValues(themeInfo, themeInfo.currentAccentId, userInfo.theme_emoticon, false);
+                } else {
+                    Theme.refreshThemeColors();
+                }
             }
         } else if (id == NotificationCenter.didSetNewWallpapper) {
             if (fragmentView != null) {
-                contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
+                contentView.setBackgroundImage(Theme.getCachedChatWallpaper(), Theme.isWallpaperMotion());
                 progressView2.invalidate();
                 if (emptyView != null) {
                     emptyView.invalidate();
@@ -15327,6 +15418,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     removeSelfFromStack();
                 }
             }
+        } else if (id == NotificationCenter.needSetDayNightChatTheme) {
+            Theme.ThemeInfo theme = (Theme.ThemeInfo) args[0];
+            int accentId = (Integer) args[3];
+            getParentLayout().setChatThemedValues(theme, accentId, null, true);
         }
     }
 
@@ -15641,7 +15736,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void rotateMotionBackgroundDrawable() {
-        Drawable wallpaper = Theme.getCachedWallpaperNonBlocking();
+        Drawable wallpaper = Theme.getCachedChatWallpaperNonBlocking();
         if (wallpaper instanceof MotionBackgroundDrawable) {
             ((MotionBackgroundDrawable) wallpaper).switchToNextPosition();
         }
@@ -23627,8 +23722,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         if (reportType < 0) {
             themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_chat_actionBarDefault));
             themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_chat_actionBarDefaultIcon));
             themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_actionBarDefaultSubtitle));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_actionBarDefaultTitle));
         } else {
             themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarActionModeDefault));
             themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarActionModeDefaultIcon));
@@ -23642,9 +23741,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         themeDescriptions.add(new ThemeDescription(chatListView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
 
         themeDescriptions.add(new ThemeDescription(avatarContainer != null ? avatarContainer.getTitleTextView() : null, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
+        themeDescriptions.add(new ThemeDescription(avatarContainer != null ? avatarContainer.getTitleTextView() : null, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_actionBarDefaultTitle));
         themeDescriptions.add(new ThemeDescription(avatarContainer != null ? avatarContainer.getTitleTextView() : null, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_actionBarDefaultSubtitle));
+        themeDescriptions.add(new ThemeDescription(avatarContainer != null ? avatarContainer.getTitleTextView() : null, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chat_actionBarDefaultSubtitle));
         themeDescriptions.add(new ThemeDescription(avatarContainer != null ? avatarContainer.getSubtitleTextView() : null, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, null, new Paint[]{Theme.chat_statusPaint, Theme.chat_statusRecordPaint}, null, null, Theme.key_chat_status, null));
         themeDescriptions.add(new ThemeDescription(avatarContainer != null ? avatarContainer.getSubtitleTextView() : null, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_actionBarDefaultSubtitle, null));
+        themeDescriptions.add(new ThemeDescription(avatarContainer != null ? avatarContainer.getSubtitleTextView() : null, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_chat_actionBarDefaultSubtitle, null));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCH, null, null, null, null, Theme.key_actionBarDefaultSearch));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCHPLACEHOLDER, null, null, null, null, Theme.key_actionBarDefaultSearchPlaceholder));

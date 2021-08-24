@@ -1439,6 +1439,13 @@ public class NotificationsController extends BaseController {
                         }
                     } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatJoinedByLink) {
                         return LocaleController.formatString("NotificationInvitedToGroupByLink", R.string.NotificationInvitedToGroupByLink, name, chat.title);
+                    } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionSetChatTheme) {
+                        String emoticon = ((TLRPC.TL_messageActionSetChatTheme) messageObject.messageOwner.action).emoticon;
+                        if (emoticon == null || emoticon.isEmpty()) {
+                            return LocaleController.formatString("NotificationResetChatTheme", R.string.NotificationResetChatTheme, name);
+                        } else {
+                            return LocaleController.formatString("NotificationSetChatTheme", R.string.NotificationSetChatTheme, name, emoticon);
+                        }
                     } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatEditTitle) {
                         return LocaleController.formatString("NotificationEditedGroupName", R.string.NotificationEditedGroupName, name, messageObject.messageOwner.action.title);
                     } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatEditPhoto || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatDeletePhoto) {

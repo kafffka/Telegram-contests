@@ -219,7 +219,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             return;
         }
         //int kbHeight = SharedConfig.smoothKeyboard ? 0 : keyboardHeight;
-        Drawable newDrawable = Theme.getCachedWallpaperNonBlocking();
+        Drawable newDrawable = Theme.getCachedChatWallpaperNonBlocking();
         if (newDrawable != backgroundDrawable && newDrawable != null) {
             if (Theme.isAnimatingColor()) {
                 oldBackgroundDrawable = backgroundDrawable;
