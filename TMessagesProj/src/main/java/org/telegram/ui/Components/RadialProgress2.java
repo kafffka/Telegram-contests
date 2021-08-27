@@ -20,6 +20,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ChatTheme;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.Locale;
@@ -65,6 +66,7 @@ public class RadialProgress2 {
     private Canvas miniDrawCanvas;
 
     private float overrideAlpha = 1.0f;
+    public ChatTheme chatTheme;
 
     public RadialProgress2(View parentView) {
         miniProgressBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -298,26 +300,26 @@ public class RadialProgress2 {
 
         if (isPressedMini && circleCrossfadeColorKey == null) {
             if (iconPressedColorKey != null) {
-                miniMediaActionDrawable.setColor(Theme.getColor(iconPressedColorKey));
+                miniMediaActionDrawable.setColor(Theme.getChatThemeColor(chatTheme, iconPressedColorKey));
             } else {
                 miniMediaActionDrawable.setColor(iconPressedColor);
             }
             if (circlePressedColorKey != null) {
-                circleMiniPaint.setColor(Theme.getColor(circlePressedColorKey));
+                circleMiniPaint.setColor(Theme.getChatThemeColor(chatTheme, circlePressedColorKey));
             } else {
                 circleMiniPaint.setColor(circlePressedColor);
             }
         } else {
             if (iconColorKey != null) {
-                miniMediaActionDrawable.setColor(Theme.getColor(iconColorKey));
+                miniMediaActionDrawable.setColor(Theme.getChatThemeColor(chatTheme, iconColorKey));
             } else {
                 miniMediaActionDrawable.setColor(iconColor);
             }
             if (circleColorKey != null) {
                 if (circleCrossfadeColorKey != null) {
-                    circleMiniPaint.setColor(AndroidUtilities.getOffsetColor(Theme.getColor(circleColorKey), Theme.getColor(circleCrossfadeColorKey), circleCrossfadeColorProgress, circleCheckProgress));
+                    circleMiniPaint.setColor(AndroidUtilities.getOffsetColor(Theme.getChatThemeColor(chatTheme, circleColorKey), Theme.getChatThemeColor(chatTheme, circleCrossfadeColorKey), circleCrossfadeColorProgress, circleCheckProgress));
                 } else {
-                    circleMiniPaint.setColor(Theme.getColor(circleColorKey));
+                    circleMiniPaint.setColor(Theme.getChatThemeColor(chatTheme, circleColorKey));
                 }
             } else {
                 circleMiniPaint.setColor(circleColor);
@@ -327,27 +329,27 @@ public class RadialProgress2 {
         int color;
         if (isPressed) {
             if (iconPressedColorKey != null) {
-                mediaActionDrawable.setColor(color = Theme.getColor(iconPressedColorKey));
-                mediaActionDrawable.setBackColor(Theme.getColor(circlePressedColorKey));
+                mediaActionDrawable.setColor(color = Theme.getChatThemeColor(chatTheme, iconPressedColorKey));
+                mediaActionDrawable.setBackColor(Theme.getChatThemeColor(chatTheme, circlePressedColorKey));
             } else {
                 mediaActionDrawable.setColor(color = iconPressedColor);
                 mediaActionDrawable.setBackColor(circlePressedColor);
             }
             if (circlePressedColorKey != null) {
-                circlePaint.setColor(Theme.getColor(circlePressedColorKey));
+                circlePaint.setColor(Theme.getChatThemeColor(chatTheme, circlePressedColorKey));
             } else {
                 circlePaint.setColor(circlePressedColor);
             }
         } else {
             if (iconColorKey != null) {
-                mediaActionDrawable.setColor(color = Theme.getColor(iconColorKey));
-                mediaActionDrawable.setBackColor(Theme.getColor(circleColorKey));
+                mediaActionDrawable.setColor(color = Theme.getChatThemeColor(chatTheme, iconColorKey));
+                mediaActionDrawable.setBackColor(Theme.getChatThemeColor(chatTheme, circleColorKey));
             } else {
                 mediaActionDrawable.setColor(color = iconColor);
                 mediaActionDrawable.setBackColor(circleColor);
             }
             if (circleColorKey != null) {
-                circlePaint.setColor(Theme.getColor(circleColorKey));
+                circlePaint.setColor(Theme.getChatThemeColor(chatTheme, circleColorKey));
             } else {
                 circlePaint.setColor(circleColor);
             }
@@ -500,5 +502,9 @@ public class RadialProgress2 {
 
     public String getCircleColorKey() {
         return circleColorKey;
+    }
+
+    public void setChatTheme(ChatTheme chatTheme) {
+        this.chatTheme = chatTheme;
     }
 }

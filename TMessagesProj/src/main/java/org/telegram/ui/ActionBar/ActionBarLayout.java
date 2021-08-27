@@ -26,7 +26,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import androidx.annotation.Keep;
 
-import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
@@ -41,11 +40,11 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.GroupCallPip;
@@ -250,6 +249,7 @@ public class ActionBarLayout extends FrameLayout {
     private ArrayList<int[]> animateEndColors = new ArrayList<>();
     private ArrayList<ArrayList<ThemeDescription>> themeAnimatorDescriptions = new ArrayList<>();
     private ArrayList<ThemeDescription> presentingFragmentDescriptions;
+    private ChatTheme presentingFragmentChatTheme;
     private ArrayList<ThemeDescription.ThemeDescriptionDelegate> themeAnimatorDelegate = new ArrayList<>();
     private AnimatorSet themeAnimatorSet;
     private float themeAnimationValue;
@@ -257,10 +257,6 @@ public class ActionBarLayout extends FrameLayout {
     private Theme.ThemeInfo animateSetThemeAfterAnimation;
     private boolean animateSetThemeNightAfterAnimation;
     private int animateSetThemeAccentIdAfterAnimation;
-    private boolean animateChatThemeAfterAnimation;
-    private Theme.ThemeInfo animateSetChatThemeAfterAnimation;
-    private int animateSetChatThemeAccentIdAfterAnimation;
-    private String animateSetEmoticonChatThemeAfterAnimation;
     private boolean rebuildAfterAnimation;
     private boolean rebuildLastAfterAnimation;
     private boolean showLastAfterAnimation;
@@ -638,6 +634,9 @@ public class ActionBarLayout extends FrameLayout {
         lastFragment.onResume();
         if (themeAnimatorSet != null) {
             presentingFragmentDescriptions = lastFragment.getThemeDescriptions();
+            if (lastFragment instanceof ChatActivity) {
+                presentingFragmentChatTheme = ((ChatActivity) lastFragment).getChatTheme();
+            }
         }
 
         BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
@@ -1077,6 +1076,9 @@ public class ActionBarLayout extends FrameLayout {
 
         if (themeAnimatorSet != null) {
             presentingFragmentDescriptions = fragment.getThemeDescriptions();
+            if (fragment instanceof ChatActivity) {
+                presentingFragmentChatTheme = ((ChatActivity) fragment).getChatTheme();
+            }
         }
 
         if (needAnimation || preview) {
@@ -1413,6 +1415,9 @@ public class ActionBarLayout extends FrameLayout {
             previousFragment.onResume();
             if (themeAnimatorSet != null) {
                 presentingFragmentDescriptions = previousFragment.getThemeDescriptions();
+                if (previousFragment instanceof ChatActivity) {
+                    presentingFragmentChatTheme = ((ChatActivity) previousFragment).getChatTheme();
+                }
             }
             currentActionBar = previousFragment.actionBar;
             if (!previousFragment.hasOwnBackground && fragmentView.getBackground() == null) {
@@ -1632,6 +1637,7 @@ public class ActionBarLayout extends FrameLayout {
                 int color = Color.argb(a, r, g, b);
                 ThemeDescription description = descriptions.get(i);
                 Theme.setAnimatedColor(description.getCurrentKey(), color);
+                FileLog.d("chat_specific | ActionBar | setThemeAnimationValue for key " + description.getCurrentKey());
                 description.setColor(color, false, false);
             }
         }
@@ -1645,7 +1651,9 @@ public class ActionBarLayout extends FrameLayout {
             for (int i = 0, N = presentingFragmentDescriptions.size(); i < N; i++) {
                 ThemeDescription description = presentingFragmentDescriptions.get(i);
                 String key = description.getCurrentKey();
-                description.setColor(Theme.getColor(key), false, false);
+                // TODO! TEMP
+                FileLog.d("chat_specific | ActionBar | presentingFragmentChatTheme = " + presentingFragmentChatTheme.themeInfo.name);
+                description.setColor(Theme.getChatThemeColor(presentingFragmentChatTheme, key), false, false);
             }
         }
     }
@@ -1783,17 +1791,59 @@ public class ActionBarLayout extends FrameLayout {
         }
     }
 
+    public void setChatThemedValues2(ChatTheme chatTheme, int userId, boolean temporary) {
+        String emoticon;
+        if (chatTheme == null) {
+            emoticon = null;
+            ChatTheme.disableIsPreviewMode(userId);
+            ChatTheme.clearChatThemeForUser(userId);
+        } else {
+            emoticon = chatTheme.getEmoticon();
+            FileLog.d("chat_specific | ActionBarLayout | setChatThemedValues2 theme " + chatTheme.themeInfo.name);
+            if (temporary) {
+                ChatTheme.setTemporaryChatThemeForUser(userId, emoticon);
+            } else {
+                ChatTheme.disableIsPreviewMode(userId);
+                ChatTheme.setChatThemeForUser(userId, emoticon);
+            }
+        }
+        int count = fragmentsStack.size() - (inPreviewMode || transitionAnimationPreviewMode ? 2 : 1);
+        for (int a = 0; a < count; a++) {
+            BaseFragment fragment = fragmentsStack.get(a);
+            fragment.clearViews();
+            fragment.setParentLayout(this);
+        }
+
+        FileLog.d("chat_specific | ActionBar | getLastFragment = " + getLastFragment().getClass().getSimpleName());
+        if (getLastFragment() instanceof ChatActivity) {
+            ArrayList<ThemeDescription> descriptions = getLastFragment().getThemeDescriptions();
+            if (emoticon != null) {
+                ChatTheme updatedChatTheme = ChatTheme.getChatThemeByEmoticon(emoticon);
+                for (int i = 0, N = descriptions.size(); i < N; i++) {
+                    ThemeDescription description = descriptions.get(i);
+                    String key = description.getCurrentKey();
+                    description.setColor(Theme.getChatThemeColor(updatedChatTheme, key), false, false);
+
+                }
+            } else {
+                for (int i = 0, N = descriptions.size(); i < N; i++) {
+                    ThemeDescription description = descriptions.get(i);
+                    String key = description.getCurrentKey();
+                    description.setColor(Theme.getColor(key), false, false);
+                }
+            }
+            for (int i = 0, N = descriptions.size(); i < N; i++) {
+                ThemeDescription description = descriptions.get(i);
+                ThemeDescription.ThemeDescriptionDelegate delegate = description.setDelegateDisabled();
+                if (delegate != null) {
+                    delegate.didSetColor();
+                }
+            }
+        }
+
+    }
+
     public void setChatThemedValues(Theme.ThemeInfo theme, int accentId, String emoticon, boolean temporary) {
-        if (Theme.isApplyingChatTheme) {
-            return;
-        }
-        if (transitionAnimationInProgress || startedTracking) {
-            animateChatThemeAfterAnimation = true;
-            animateSetChatThemeAfterAnimation = theme;
-            animateSetChatThemeAccentIdAfterAnimation = accentId;
-            animateSetEmoticonChatThemeAfterAnimation = emoticon;
-            return;
-        }
         if (emoticon != null) {
             Theme.currentUserEmoticon = emoticon;
         }
@@ -1917,12 +1967,6 @@ public class ActionBarLayout extends FrameLayout {
             animateThemedValues(animateSetThemeAfterAnimation, animateSetThemeAccentIdAfterAnimation, animateSetThemeNightAfterAnimation, false);
             animateSetThemeAfterAnimation = null;
             animateThemeAfterAnimation = false;
-        } else if (animateChatThemeAfterAnimation) {
-            setChatThemedValues(animateSetChatThemeAfterAnimation, animateSetChatThemeAccentIdAfterAnimation, animateSetEmoticonChatThemeAfterAnimation, false);
-            animateSetThemeAfterAnimation = null;
-            animateSetChatThemeAccentIdAfterAnimation = -1;
-            animateSetEmoticonChatThemeAfterAnimation = null;
-            animateChatThemeAfterAnimation = false;
         }
     }
 

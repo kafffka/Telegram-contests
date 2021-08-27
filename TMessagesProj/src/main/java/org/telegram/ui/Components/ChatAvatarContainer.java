@@ -39,6 +39,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ChatTheme;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
@@ -71,10 +72,12 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     private String lastSubtitleColorKey;
 
     private SharedMediaLayout.SharedMediaPreloader sharedMediaPreloader;
+    public ChatTheme chatTheme;
 
     public ChatAvatarContainer(Context context, ChatActivity chatActivity, boolean needTime) {
         super(context);
         parentFragment = chatActivity;
+        chatTheme = chatActivity.getChatTheme();
 
         final boolean avatarClickable = parentFragment != null && parentFragment.getChatMode() == 0 && !UserObject.isReplyUser(parentFragment.getCurrentUser());
         avatarImageView = new BackupImageView(context) {
@@ -105,7 +108,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         }
 
         titleTextView = new SimpleTextView(context);
-        titleTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle));
+        titleTextView.setTextColor(Theme.getChatThemeColor(chatTheme, Theme.key_actionBarDefaultTitle));
         titleTextView.setTextSize(18);
         titleTextView.setGravity(Gravity.LEFT);
         titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -113,8 +116,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         addView(titleTextView);
 
         subtitleTextView = new SimpleTextView(context);
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_chat_actionBarDefaultSubtitle));
-        subtitleTextView.setTag(Theme.key_chat_actionBarDefaultSubtitle);
+        subtitleTextView.setTextColor(Theme.getChatThemeColor(chatTheme, Theme.key_actionBarDefaultSubtitle));
+        subtitleTextView.setTag(Theme.key_actionBarDefaultSubtitle);
         subtitleTextView.setTextSize(14);
         subtitleTextView.setGravity(Gravity.LEFT);
         addView(subtitleTextView);
@@ -343,7 +346,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (scam || fake) {
             if (!(titleTextView.getRightDrawable() instanceof ScamDrawable)) {
                 ScamDrawable drawable = new ScamDrawable(11, scam ? 0 : 1);
-                drawable.setColor(Theme.getColor(Theme.key_chat_actionBarDefaultSubtitle));
+                drawable.setColor(Theme.getChatThemeColor(chatTheme, Theme.key_actionBarDefaultSubtitle));
                 titleTextView.setRightDrawable(drawable);
             }
         } else if (titleTextView.getRightDrawable() instanceof ScamDrawable) {
@@ -575,10 +578,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             useOnlineColor = true;
             setTypingAnimation(true);
         }
-        lastSubtitleColorKey = useOnlineColor ? Theme.key_chat_status : Theme.key_chat_actionBarDefaultSubtitle;
+        lastSubtitleColorKey = useOnlineColor ? Theme.key_chat_status : Theme.key_actionBarDefaultSubtitle;
         if (lastSubtitle == null) {
             subtitleTextView.setText(newSubtitle);
-            subtitleTextView.setTextColor(Theme.getColor(lastSubtitleColorKey));
+            subtitleTextView.setTextColor(Theme.getChatThemeColor(chatTheme, lastSubtitleColorKey));
             subtitleTextView.setTag(lastSubtitleColorKey);
         } else {
             lastSubtitle = newSubtitle;
@@ -720,7 +723,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 subtitleTextView.setText(lastSubtitle);
                 lastSubtitle = null;
                 if (lastSubtitleColorKey != null) {
-                    subtitleTextView.setTextColor(Theme.getColor(lastSubtitleColorKey));
+                    subtitleTextView.setTextColor(Theme.getChatThemeColor(chatTheme, lastSubtitleColorKey));
                     subtitleTextView.setTag(lastSubtitleColorKey);
                 }
             }
@@ -729,8 +732,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 lastSubtitle = subtitleTextView.getText();
             }
             subtitleTextView.setText(title);
-            subtitleTextView.setTextColor(Theme.getColor(Theme.key_chat_actionBarDefaultSubtitle));
-            subtitleTextView.setTag(Theme.key_chat_actionBarDefaultSubtitle);
+            subtitleTextView.setTextColor(Theme.getChatThemeColor(chatTheme, Theme.key_actionBarDefaultSubtitle));
+            subtitleTextView.setTag(Theme.key_actionBarDefaultSubtitle);
         }
     }
 

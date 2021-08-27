@@ -952,7 +952,9 @@
     <string name="ApplyLocalizationFile">Apply localization file</string>
     <string name="ApplyThemeFile">Apply theme file</string>
     <string name="SelectTheme">Select theme</string>
-    <string name="ApplyChatTheme">Apply theme</string>
+    <string name="ApplyChatTheme">Apply Theme</string>
+    <string name="ResetChatTheme">Reset Theme</string>
+    <string name="ChatNoTheme">No Theme</string>
     <string name="UnsupportedAttachment">Unsupported attachment</string>
     <string name="SetTimer">Set self-destruct timer</string>
     <string name="ServiceNotifications">Service notifications</string>

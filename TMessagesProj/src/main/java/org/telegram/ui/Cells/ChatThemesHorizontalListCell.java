@@ -13,6 +13,8 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.text.Layout;
+import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.HapticFeedbackConstants;
@@ -23,19 +25,25 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
 
 import androidx.annotation.Keep;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.ChatTheme;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.EmojiView;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.ThemeActivity;
 import org.telegram.ui.ThemeSetUrlActivity;
 
@@ -48,7 +56,11 @@ public class ChatThemesHorizontalListCell extends RecyclerListView implements No
     private LinearLayoutManager horizontalLayoutManager;
     private HashMap<String, Theme.ThemeInfo> loadingThemes = new HashMap<>();
     private HashMap<Theme.ThemeInfo, String> loadingWallpapers = new HashMap<>();
-    private ArrayList<Theme.ThemeInfo> defaultThemes;
+    private ArrayList<ChatTheme> defaultThemes;
+    private int noChatThemeBackgroundColor;
+    private int noChatThemeBorderColor;
+    private int userId;
+    private String selectedEmoticon;
 
     private class ThemesListAdapter extends SelectionAdapter {
 
@@ -74,7 +86,6 @@ public class ChatThemesHorizontalListCell extends RecyclerListView implements No
             view.setTheme(defaultThemes.get(position), position == getItemCount() - 1, position == 0);
         }
 
-
         @Override
         public int getItemCount() {
             return defaultThemes.size();
@@ -83,6 +94,7 @@ public class ChatThemesHorizontalListCell extends RecyclerListView implements No
 
     private class InnerThemeView extends View {
 
+        private ChatTheme chatTheme;
         private Theme.ThemeInfo themeInfo;
         private RectF rect = new RectF();
         private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -107,6 +119,8 @@ public class ChatThemesHorizontalListCell extends RecyclerListView implements No
         private Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         private BitmapShader bitmapShader;
         private Matrix shaderMatrix = new Matrix();
+
+        private StaticLayout noThemeStaticLayout;
 
         public InnerThemeView(Context context) {
             super(context);
@@ -145,11 +159,16 @@ public class ChatThemesHorizontalListCell extends RecyclerListView implements No
             invalidate();
         }
 
-        public void setTheme(Theme.ThemeInfo theme, boolean last, boolean first) {
+        public void setTheme(ChatTheme chatTheme, boolean last, boolean first) {
+            this.chatTheme = chatTheme;
             isFirst = first;
             isLast = last;
-            themeInfo = theme;
-            if (themeInfo != null && themeInfo.info != null && themeInfo.info.for_chat) {
+            if (chatTheme == null) {
+                return;
+            }
+
+            themeInfo = chatTheme.themeInfo;
+            if (themeInfo != null && themeInfo.info != null) {
                 Theme.ThemeAccent themeAccent = themeInfo.themeAccents.get(0);
                 int messageInColor = Theme.getDefaultColor(Theme.key_chat_inBubble);
 
@@ -188,10 +207,11 @@ public class ChatThemesHorizontalListCell extends RecyclerListView implements No
         }
 
         void updateColors() {
+            if (chatTheme == null) {
+                return;
+            }
             oldBackColor = backColor;
-
             Theme.ThemeAccent accent = themeInfo.getAccent(false);
-
             int accentColor;
             int backAccent;
             int gradientAccent;
@@ -219,11 +239,11 @@ public class ChatThemesHorizontalListCell extends RecyclerListView implements No
             int y = AndroidUtilities.dp(11);
             rect.set(x, y, x + AndroidUtilities.dp(70), y + AndroidUtilities.dp(96));
 
-            boolean drawContent = themeInfo.info == null || themeInfo.info.document != null || themeInfo.info.settings != null && themeInfo.themeLoaded;
+            boolean drawContent = themeInfo != null && themeInfo.info != null && themeInfo.themeLoaded && themeInfo.info.settings != null;
+            boolean drawBorder = false;
 
             if (drawContent) {
                 paint.setColor(blend(oldBackColor, backColor));
-
                 if (backgroundDrawable != null) {
                     if (bitmapShader != null) {
                         BitmapDrawable bitmapDrawable = (BitmapDrawable) backgroundDrawable;
@@ -251,28 +271,43 @@ public class ChatThemesHorizontalListCell extends RecyclerListView implements No
                 } else {
                     canvas.drawRoundRect(rect, AndroidUtilities.dp(6), AndroidUtilities.dp(6), paint);
                 }
-
                 bubblePaint.setColor(outColor);
-                rect.set(x + AndroidUtilities.dp(21), AndroidUtilities.dp(22), x + AndroidUtilities.dp(21 + 43), AndroidUtilities.dp(22 + 22));
+                rect.set(x + AndroidUtilities.dp(21), y + AndroidUtilities.dp(10), x + AndroidUtilities.dp(21 + 43), y + AndroidUtilities.dp(10 + 22));
                 canvas.drawRoundRect(rect, AndroidUtilities.dp(12), AndroidUtilities.dp(12), bubblePaint);
-
-
                 bubblePaint.setColor(inColor);
-                rect.set(x + AndroidUtilities.dp(6), AndroidUtilities.dp(48), x + AndroidUtilities.dp(6 + 43), AndroidUtilities.dp(48 + 22));
+                rect.set(x + AndroidUtilities.dp(6), y + AndroidUtilities.dp(36), x + AndroidUtilities.dp(6 + 43), y + AndroidUtilities.dp(36 + 22));
                 canvas.drawRoundRect(rect, AndroidUtilities.dp(12), AndroidUtilities.dp(12), bubblePaint);
+                String name = themeInfo.emoticon;
+
+                int width = (int) Math.ceil(textPaint.measureText(name));
+                textPaint.setTextSize(AndroidUtilities.dp(20));
+                textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                canvas.drawText(name, x + (AndroidUtilities.dp(70) - width) / 2f, y + AndroidUtilities.dp(84), textPaint);
+
+                borderPaint.setColor(checkColor);
+                drawBorder = themeInfo.emoticon.equals(selectedEmoticon);
+            } else if (chatTheme == null) {
+                paint.setColor(noChatThemeBackgroundColor);
+                canvas.drawRoundRect(rect, AndroidUtilities.dp(6), AndroidUtilities.dp(6), paint);
+                String name = "❌";
+                textPaint.setTextSize(AndroidUtilities.dp(16));
+                int width = (int) Math.ceil(textPaint.measureText(name));
+                textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                canvas.drawText(name, x + (AndroidUtilities.dp(70) - width) / 2f, y + AndroidUtilities.dp(84), textPaint);
+
+                canvas.save();
+                StaticLayout textLayout = getNoThemeStaticLayout();
+                canvas.translate(x + (AndroidUtilities.dp(70) - textLayout.getWidth()) / 2f, y + AndroidUtilities.dp(16));
+                textLayout.draw(canvas);
+                canvas.restore();
+
+                borderPaint.setColor(noChatThemeBorderColor);
+                drawBorder = selectedEmoticon == null;
             }
-
-            String name = themeInfo.emoticon;
-            int width = (int) Math.ceil(textPaint.measureText(name));
-            textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            canvas.drawText(name, x + (AndroidUtilities.dp(70) - width) / 2f, AndroidUtilities.dp(97), textPaint);
-
-            boolean drawBorder = themeInfo == Theme.getCurrentChatTheme();
             if (drawBorder) {
                 x = isFirst ? AndroidUtilities.dp(13) : AndroidUtilities.dp(1f);
                 y = AndroidUtilities.dp(8);
                 rect.set(x, y, x + AndroidUtilities.dp(76), y + AndroidUtilities.dp(102));
-                borderPaint.setColor(checkColor);
                 canvas.drawRoundRect(rect, AndroidUtilities.dp(9), AndroidUtilities.dp(9), borderPaint);
             }
         }
@@ -283,6 +318,18 @@ public class ChatThemesHorizontalListCell extends RecyclerListView implements No
                 name = name.substring(0, name.indexOf(' '));
             }
             return name;
+        }
+
+        private StaticLayout getNoThemeStaticLayout() {
+            if (noThemeStaticLayout != null) {
+                return noThemeStaticLayout;
+            }
+            TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG + TextPaint.SUBPIXEL_TEXT_FLAG);
+            textPaint.setColor(Theme.getColor(Theme.key_chat_emojiPanelTrendingDescription));
+            textPaint.setTextSize(AndroidUtilities.dp(14));
+            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            noThemeStaticLayout = StaticLayoutEx.createStaticLayout2(LocaleController.getString("ChatNoTheme", R.string.ChatNoTheme), textPaint, AndroidUtilities.dp(52), Layout.Alignment.ALIGN_CENTER, 1f, 0f, true, TextUtils.TruncateAt.END, AndroidUtilities.dp(52), 2);
+            return noThemeStaticLayout;
         }
 
         private int blend(int color1, int color2) {
@@ -306,12 +353,11 @@ public class ChatThemesHorizontalListCell extends RecyclerListView implements No
         }
     }
 
-    public ChatThemesHorizontalListCell(Context context, ArrayList<Theme.ThemeInfo> def) {
+    public ChatThemesHorizontalListCell(Context context, ArrayList<ChatTheme> def, int userId) {
         super(context);
 
-        defaultThemes = def;
-
-        setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
+        this.userId = userId;
+        setItems();
         setItemAnimator(null);
         setLayoutAnimation(null);
         horizontalLayoutManager = new LinearLayoutManager(context) {
@@ -326,7 +372,7 @@ public class ChatThemesHorizontalListCell extends RecyclerListView implements No
         setLayoutManager(horizontalLayoutManager);
         setAdapter(new ThemesListAdapter(context));
         setOnItemClickListener((view1, position) -> {
-            selectTheme(((InnerThemeView) view1).themeInfo);
+            selectTheme(((InnerThemeView) view1).chatTheme);
             int left = view1.getLeft();
             int right = view1.getRight();
             if (left < 0) {
@@ -337,22 +383,54 @@ public class ChatThemesHorizontalListCell extends RecyclerListView implements No
         });
     }
 
-    public void selectTheme(Theme.ThemeInfo themeInfo) {
-        if (themeInfo.info != null) {
-            if (!themeInfo.themeLoaded) {
-                return;
-            }
-            if (!themeInfo.info.for_chat && themeInfo.info.document == null) {
-                return;
-            }
-        }
-        if (!TextUtils.isEmpty(themeInfo.assetName)) {
-            Theme.PatternsLoader.createLoader(false);
-        }
-        if (themeInfo == Theme.getCurrentChatTheme()) {
-            return;
+    private void setItems() {
+        defaultThemes = ChatTheme.getCurrentChatThemes();
+        if (ChatTheme.getChatThemeForUser(userId) != null) {
+            ChatTheme currentChatTheme = ChatTheme.getChatThemeForUser(userId);
+            selectedEmoticon = currentChatTheme.getEmoticon();
+            noChatThemeBorderColor = Theme.getChatThemeColor(currentChatTheme, Theme.key_featuredStickers_addButton);
         } else {
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightChatTheme, themeInfo, false, null, themeInfo.currentAccentId);
+            selectedEmoticon = null;
+        }
+        if (selectedEmoticon != null) {
+            defaultThemes.add(0, null);
+        }
+        if (ChatTheme.previewIsDark) {
+            noChatThemeBackgroundColor = 0x22ffffff;
+        } else {
+            noChatThemeBackgroundColor = 0xfff2f2f2;
+        }
+    }
+
+    public void reloadItems() {
+        if (getAdapter() != null) {
+            setItems();
+            getAdapter().notifyDataSetChanged();
+        }
+    }
+
+    public void selectTheme(ChatTheme chatTheme) {
+        if (chatTheme != null) {
+            Theme.ThemeInfo themeInfo = chatTheme.themeInfo;
+            if (themeInfo.info != null) {
+                if (!themeInfo.themeLoaded) {
+                    return;
+                }
+                if (!themeInfo.info.for_chat && themeInfo.info.document == null) {
+                    return;
+                }
+            }
+            if (!TextUtils.isEmpty(themeInfo.assetName)) {
+                Theme.PatternsLoader.createLoader(false);
+            }
+            if (themeInfo == Theme.getCurrentChatTheme()) {
+                return;
+            } else {
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightChatTheme, chatTheme, true);
+            }
+            selectedEmoticon = chatTheme.getEmoticon();
+        } else {
+            selectedEmoticon = null;
         }
 
         int count = getChildCount();
@@ -362,10 +440,6 @@ public class ChatThemesHorizontalListCell extends RecyclerListView implements No
                 ((InnerThemeView) child).updateCurrentThemeCheck();
             }
         }
-    }
-
-    public void resetTheme() {
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, Theme.getCurrentTheme(), false, null, Theme.getCurrentTheme().currentAccentId);
     }
 
     @Override

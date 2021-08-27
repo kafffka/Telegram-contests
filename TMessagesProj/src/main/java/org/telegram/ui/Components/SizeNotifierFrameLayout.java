@@ -24,6 +24,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
+import org.telegram.ui.ActionBar.ChatTheme;
 import org.telegram.ui.ActionBar.Theme;
 
 public class SizeNotifierFrameLayout extends FrameLayout {
@@ -48,6 +49,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private float emojiOffset;
     private boolean animationInProgress;
     private boolean skipBackgroundDrawing;
+    public ChatTheme chatTheme;
 
     public interface SizeNotifierFrameLayoutDelegate {
         void onSizeChanged(int keyboardHeight, boolean isWidthGreater);
@@ -219,7 +221,12 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             return;
         }
         //int kbHeight = SharedConfig.smoothKeyboard ? 0 : keyboardHeight;
-        Drawable newDrawable = Theme.getCachedChatWallpaperNonBlocking();
+        Drawable newDrawable;
+        if (chatTheme == null) {
+            newDrawable = Theme.getCachedWallpaperNonBlocking();
+        } else {
+            newDrawable = Theme.getCachedChatWallpaperNonBlocking(chatTheme);
+        }
         if (newDrawable != backgroundDrawable && newDrawable != null) {
             if (Theme.isAnimatingColor()) {
                 oldBackgroundDrawable = backgroundDrawable;
@@ -339,6 +346,11 @@ public class SizeNotifierFrameLayout extends FrameLayout {
 
     public void setSkipBackgroundDrawing(boolean skipBackgroundDrawing) {
         this.skipBackgroundDrawing = skipBackgroundDrawing;
+        invalidate();
+    }
+
+    public void setChatTheme(ChatTheme chatTheme) {
+        this.chatTheme = chatTheme;
         invalidate();
     }
 }

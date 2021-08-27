@@ -168,6 +168,7 @@ public class ApplicationLoader extends Application {
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
             ContactsController.getInstance(a).checkAppAccount();
             DownloadController.getInstance(a);
+            MessagesController.getInstance(a).loadChatThemes();
         }
 
         WearDataLayerListenerService.updateWatchConnectionState();

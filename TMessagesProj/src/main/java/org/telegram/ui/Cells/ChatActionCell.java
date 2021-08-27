@@ -69,6 +69,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         default void needOpenInviteLink(TLRPC.TL_chatInviteExported invite) {
 
         }
+
+        default void needOpenChatThemes() {
+        }
     }
 
     private int TAG;

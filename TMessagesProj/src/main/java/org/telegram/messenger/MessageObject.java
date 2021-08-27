@@ -3489,6 +3489,11 @@ public class MessageObject {
                 name = invite.link;
                 id = "invite";
                 spanObject = invite;
+            }  else if (object instanceof TLRPC.TL_messageActionSetChatTheme) {
+                TLRPC.TL_messageActionSetChatTheme chatTheme  = (TLRPC.TL_messageActionSetChatTheme) object;
+                name = chatTheme.emoticon;
+                id = "chat_theme";
+                spanObject = chatTheme;
             } else {
                 name = "";
                 id = "0";

@@ -39,6 +39,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.ChatTheme;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
@@ -4250,10 +4251,10 @@ public class MessagesController extends BaseController implements NotificationCe
         }
     }
 
-    public void saveChatTheme(Theme.ThemeInfo themeInfo, TLRPC.User user) {
+    public void saveChatTheme(ChatTheme chatTheme, TLRPC.User user) {
         if (user != null) {
             TLRPC.TL_messages_setChatTheme req = new TLRPC.TL_messages_setChatTheme();
-            String emoticon = themeInfo != null && themeInfo.emoticon != null? themeInfo.emoticon: "";
+            String emoticon = chatTheme != null && chatTheme.themeInfo != null && chatTheme.themeInfo.emoticon != null? chatTheme.themeInfo.emoticon: "";
             req.emoticon = emoticon;
             TLRPC.TL_inputPeerUser inputPeer = new TLRPC.TL_inputPeerUser();
             inputPeer.user_id = user.id;
@@ -14529,6 +14530,10 @@ public class MessagesController extends BaseController implements NotificationCe
         } else {
             loadMessagesInternal(dialogId, 0, true, count, finalMessageId, 0, true, 0, classGuid, 2, 0, isChannel, 0, 0, 0, 0, 0, 0, false, 0, true, false);
         }
+    }
+
+    public void loadChatThemes() {
+        ChatTheme.loadRemoteChatThemes(currentAccount, false);
     }
 
     public interface MessagesLoadedCallback {
