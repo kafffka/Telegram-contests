@@ -6958,7 +6958,6 @@ public class Theme {
                             }
                             info.loadThemeDocument();
 
-                            // TODO! TEMP
                             ChatTheme chatTheme1 = new ChatTheme(theme, chatTheme);
                             chatTheme1.themeInfo = info;
                             chatTheme1.fillColors();
@@ -8939,82 +8938,6 @@ public class Theme {
     public static int getServiceMessageColor() {
         Integer serviceColor = currentColors.get(key_chat_serviceBackground);
         return serviceColor == null ? serviceMessageColor : serviceColor;
-    }
-
-    // TODO! REMOVE?
-    public static void loadChatWallpaper() {
-        if (currentUserId == -1 || currentUserEmoticon == null || currentUserEmoticon.isEmpty()) {
-            return;
-        }
-
-        ThemeInfo themeInfo = getCurrentChatTheme();
-        if (themeInfo == null) {
-            return;
-        }
-
-        File wallpaperFile;
-        boolean wallpaperMotion;
-        ThemeAccent accent = themeInfo.getAccent(false);
-        if (accent != null) {
-            wallpaperFile = accent.getPathToWallpaper();
-            wallpaperMotion = accent.patternMotion;
-        } else {
-            wallpaperFile = null;
-            wallpaperMotion = false;
-        }
-        int intensity;
-        OverrideWallpaperInfo overrideWallpaper = themeInfo.overrideWallpaper;
-        if (overrideWallpaper != null) {
-            intensity = (int) (overrideWallpaper.intensity * 100);
-        } else {
-            intensity = (int) (accent != null ? (accent.patternIntensity * 100) : themeInfo.patternIntensity);
-        }
-
-        Utilities.searchQueue.postRunnable(wallpaperLoadTask = () -> {
-            boolean overrideTheme = (!hasPreviousTheme || isApplyingAccent) && overrideWallpaper != null;
-            if (overrideWallpaper != null) {
-                isWallpaperMotion = overrideWallpaper.isMotion;
-                isPatternWallpaper = overrideWallpaper.color != 0 && !overrideWallpaper.isDefault() && !overrideWallpaper.isColor();
-            } else {
-                isWallpaperMotion = themeInfo.isMotion;
-                isPatternWallpaper = themeInfo.patternBgColor != 0;
-            }
-            patternIntensity = intensity;
-            if (!overrideTheme) {
-                Integer backgroundColor = currentColors.get(key_chat_wallpaper);
-                Integer gradientToColor3 = currentColors.get(key_chat_wallpaper_gradient_to3);
-                if (gradientToColor3 == null) {
-                    gradientToColor3 = 0;
-                }
-                Integer gradientToColor2 = currentColors.get(key_chat_wallpaper_gradient_to2);
-                Integer gradientToColor1 = currentColors.get(key_chat_wallpaper_gradient_to1);
-                if (wallpaperFile != null && wallpaperFile.exists()) {
-                    try {
-                        if (backgroundColor != null && gradientToColor1 != null && gradientToColor2 != null) {
-                            MotionBackgroundDrawable motionBackgroundDrawable = new MotionBackgroundDrawable(backgroundColor, gradientToColor1, gradientToColor2, gradientToColor3, false);
-                            motionBackgroundDrawable.setPatternBitmap(patternIntensity, BitmapFactory.decodeFile(wallpaperFile.getAbsolutePath()));
-                            chatWallpaper = motionBackgroundDrawable;
-                        } else {
-                            chatWallpaper = Drawable.createFromPath(wallpaperFile.getAbsolutePath());
-                        }
-                        isWallpaperMotion = wallpaperMotion;
-                        isCustomTheme = true;
-                        isPatternWallpaper = true;
-                    } catch (Throwable e) {
-                        FileLog.e(e);
-                    }
-                } else if (backgroundColor != null) {
-                    if (gradientToColor1 != null && gradientToColor2 != null) {
-                        chatWallpaper = new MotionBackgroundDrawable(backgroundColor, gradientToColor1, gradientToColor2, gradientToColor3, false);
-                    }
-                }
-            }
-            AndroidUtilities.runOnUIThread(() -> {
-                wallpaperLoadTask = null;
-                createCommonChatResources();
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewWallpapper);
-            });
-        });
     }
 
     public static void loadWallpaper() {

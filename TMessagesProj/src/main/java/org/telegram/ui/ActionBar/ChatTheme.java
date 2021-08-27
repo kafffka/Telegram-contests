@@ -8,6 +8,7 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
@@ -46,8 +47,6 @@ public class ChatTheme {
         this.currentColors = new HashMap<>();
         this.isDark = tl_parent.dark_theme == tl_theme;
         this.emoticon = tl_parent.emoticon;
-
-        // TODO! Generate themeInfo and themeAccent
     }
 
     @Override
@@ -138,6 +137,11 @@ public class ChatTheme {
         currentColors.put(Theme.key_chat_outLoaderSelected, accentColor);
         currentColors.put(Theme.key_chat_outMediaIcon, outMediaColor);
         currentColors.put(Theme.key_chat_outMediaIconSelected, outMediaColor);
+
+        currentColors.put(Theme.key_chat_outGreenCall, accentColor);
+        currentColors.put(Theme.key_chat_outInstant, accentColor);
+        currentColors.put(Theme.key_chat_outInstantSelected, accentColor);
+        currentColors.put(Theme.key_inappPlayerPlayPause, accentColor);
 
         if (themeAccent.backgroundGradientOverrideColor1 != 0) {
             currentColors.put(Theme.key_actionBarDefault, (int) themeAccent.backgroundGradientOverrideColor1);
@@ -267,7 +271,7 @@ public class ChatTheme {
             AndroidUtilities.runOnUIThread(() -> {
                 wallpaperLoadTask = null;
                 // TODO! didSetNewChatWallpaper ?
-//                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewWallpapper);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewChatWallpapper, this);
             });
         });
     }
@@ -294,13 +298,6 @@ public class ChatTheme {
             FileLog.d("chat_specific | ChatTheme | setChatThemeForUser for user = " + userId + " emoticon = " + emoticon);
             userChatThemesDict.put(userId, emoticon);
         }
-    }
-
-    public static void setTemporaryChatThemeForUser(int userId, String emoticon) {
-//        if (!previousUserChatThemesDict.containsKey(userId) && userChatThemesDict.containsKey(userId)) {
-//            previousUserChatThemesDict.put(userId, getChatThemeByEmoticon(userChatThemesDict.get(userId)));
-//        }
-        setChatThemeForUser(userId, emoticon);
     }
 
     public static ChatTheme getPreviousChatThemeForUser(int userId) {

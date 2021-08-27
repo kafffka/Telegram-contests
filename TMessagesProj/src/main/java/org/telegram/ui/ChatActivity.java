@@ -746,7 +746,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             NotificationCenter.userInfoDidLoad,
             NotificationCenter.pinnedInfoDidLoad,
             NotificationCenter.didSetNewWallpapper,
-            NotificationCenter.didApplyNewTheme
+            NotificationCenter.didSetNewChatWallpapper,
+            NotificationCenter.didApplyNewTheme,
+            NotificationCenter.needSetDayNightChatTheme,
     };
 
     private final DialogInterface.OnCancelListener postponedScrollCancelListener = dialog -> {
@@ -1508,6 +1510,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         getNotificationCenter().addObserver(this, NotificationCenter.userInfoDidLoad);
         getNotificationCenter().addObserver(this, NotificationCenter.pinnedInfoDidLoad);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewWallpapper);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewChatWallpapper);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didApplyNewTheme);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.goingToPreviewTheme);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.needSetDayNightChatTheme);
@@ -1793,6 +1796,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         getNotificationCenter().removeObserver(this, NotificationCenter.userInfoDidLoad);
         getNotificationCenter().removeObserver(this, NotificationCenter.pinnedInfoDidLoad);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewWallpapper);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewChatWallpapper);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didApplyNewTheme);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.goingToPreviewTheme);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needSetDayNightChatTheme);
@@ -15279,19 +15283,32 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     loadingPinnedMessagesList = true;
                 }
 
-                ChatTheme prevChatTheme = ChatTheme.getChatThemeForUser(userInfo.user.id);
-//                if (prevChatTheme == null || !prevChatTheme.getEmoticon().equals(userInfo.theme_emoticon) || prevChatTheme.isDark() != Theme.isCurrentThemeDark()) {
-                    if (userInfo.theme_emoticon != null && !userInfo.theme_emoticon.isEmpty()) {
-                        FileLog.d("chat_specific | ChatActivity | notification load user and set chatTheme");
-                        ChatTheme.setChatThemeForUser(userInfo.user.id, userInfo.theme_emoticon);
-                        chatTheme = ChatTheme.getChatThemeForUser(userInfo.user.id);
-                        getParentLayout().setChatThemedValues2(chatTheme, userInfo.user.id, false);
-                    }
-                    // TODO! Update theme only if required
+//                if (userInfo.theme_emoticon != null && !userInfo.theme_emoticon.isEmpty()) {
+                    FileLog.d("chat_specific | ChatActivity | notification load user and set chatTheme");
+                    ChatTheme.setChatThemeForUser(userInfo.user.id, userInfo.theme_emoticon);
+                    chatTheme = ChatTheme.getChatThemeForUser(userInfo.user.id);
+                    getParentLayout().setChatThemedValues(chatTheme, userInfo.user.id, false);
+
 //                }
             }
         } else if (id == NotificationCenter.didSetNewWallpapper) {
             if (fragmentView != null) {
+                contentView.setBackgroundImage(Theme.getCachedChatWallpaper(chatTheme), Theme.isChatWallpaperMotion(chatTheme));
+                progressView2.invalidate();
+                if (emptyView != null) {
+                    emptyView.invalidate();
+                }
+                if (bigEmptyView != null) {
+                    bigEmptyView.invalidate();
+                }
+                if (floatingDateView != null) {
+                    floatingDateView.invalidate();
+                }
+                chatListView.invalidateViews();
+            }
+        } else if (id == NotificationCenter.didSetNewChatWallpapper) {
+            ChatTheme updatedChatTheme = (ChatTheme) args[0];
+            if (fragmentView != null && updatedChatTheme == getChatTheme()) {
                 contentView.setBackgroundImage(Theme.getCachedChatWallpaper(chatTheme), Theme.isChatWallpaperMotion(chatTheme));
                 progressView2.invalidate();
                 if (emptyView != null) {
@@ -15428,7 +15445,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             ChatTheme theme = (ChatTheme) args[0];
             boolean temporary = (Boolean) args[1];
             chatTheme = theme;
-            getParentLayout().setChatThemedValues2(theme, currentUser.id, temporary);
+            getParentLayout().setChatThemedValues(theme, currentUser.id, temporary);
         }
     }
 
@@ -16338,13 +16355,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         if (newChatThemeEmoticon != null) {
             String currentEmoticon = null;
-            if (ChatTheme.getChatThemeForUser(currentUserId) != null) {
-                currentEmoticon = ChatTheme.getChatThemeForUser(userInfo.user.id).getEmoticon();
+            ChatTheme currentChatTheme = ChatTheme.getChatThemeForUser(currentUserId);
+            if (currentChatTheme != null) {
+                currentEmoticon = currentChatTheme.getEmoticon();
             }
             if (!newChatThemeEmoticon.equals(currentEmoticon)) {
                 ChatTheme.setChatThemeForUser(userInfo.user.id, newChatThemeEmoticon);
                 chatTheme = ChatTheme.getChatThemeForUser(userInfo.user.id);
-                getParentLayout().setChatThemedValues2(chatTheme, userInfo.user.id, false);
+                getParentLayout().setChatThemedValues(chatTheme, userInfo.user.id, false);
             }
         }
         checkWaitingForReplies();

@@ -1651,8 +1651,6 @@ public class ActionBarLayout extends FrameLayout {
             for (int i = 0, N = presentingFragmentDescriptions.size(); i < N; i++) {
                 ThemeDescription description = presentingFragmentDescriptions.get(i);
                 String key = description.getCurrentKey();
-                // TODO! TEMP
-                FileLog.d("chat_specific | ActionBar | presentingFragmentChatTheme = " + presentingFragmentChatTheme.themeInfo.name);
                 description.setColor(Theme.getChatThemeColor(presentingFragmentChatTheme, key), false, false);
             }
         }
@@ -1791,7 +1789,7 @@ public class ActionBarLayout extends FrameLayout {
         }
     }
 
-    public void setChatThemedValues2(ChatTheme chatTheme, int userId, boolean temporary) {
+    public void setChatThemedValues(ChatTheme chatTheme, int userId, boolean temporary) {
         String emoticon;
         if (chatTheme == null) {
             emoticon = null;
@@ -1799,22 +1797,13 @@ public class ActionBarLayout extends FrameLayout {
             ChatTheme.clearChatThemeForUser(userId);
         } else {
             emoticon = chatTheme.getEmoticon();
-            FileLog.d("chat_specific | ActionBarLayout | setChatThemedValues2 theme " + chatTheme.themeInfo.name);
             if (temporary) {
-                ChatTheme.setTemporaryChatThemeForUser(userId, emoticon);
+                ChatTheme.setChatThemeForUser(userId, emoticon);
             } else {
                 ChatTheme.disableIsPreviewMode(userId);
                 ChatTheme.setChatThemeForUser(userId, emoticon);
             }
         }
-        int count = fragmentsStack.size() - (inPreviewMode || transitionAnimationPreviewMode ? 2 : 1);
-        for (int a = 0; a < count; a++) {
-            BaseFragment fragment = fragmentsStack.get(a);
-            fragment.clearViews();
-            fragment.setParentLayout(this);
-        }
-
-        FileLog.d("chat_specific | ActionBar | getLastFragment = " + getLastFragment().getClass().getSimpleName());
         if (getLastFragment() instanceof ChatActivity) {
             ArrayList<ThemeDescription> descriptions = getLastFragment().getThemeDescriptions();
             if (emoticon != null) {
@@ -1840,60 +1829,6 @@ public class ActionBarLayout extends FrameLayout {
                 }
             }
         }
-
-    }
-
-    public void setChatThemedValues(Theme.ThemeInfo theme, int accentId, String emoticon, boolean temporary) {
-        if (emoticon != null) {
-            Theme.currentUserEmoticon = emoticon;
-        }
-        for (int i = 0; i < 2; i++) {
-            BaseFragment fragment;
-            if (i == 0) {
-                fragment = getLastFragment();
-            } else {
-                if (!inPreviewMode && !transitionAnimationPreviewMode || fragmentsStack.size() <= 1) {
-                    continue;
-                }
-                fragment = fragmentsStack.get(fragmentsStack.size() - 2);
-            }
-            if (fragment != null) {
-                ArrayList<ThemeDescription> descriptions = fragment.getThemeDescriptions();
-                addStartDescriptions(descriptions);
-                if (fragment.visibleDialog instanceof BottomSheet) {
-                    BottomSheet sheet = (BottomSheet) fragment.visibleDialog;
-                    addStartDescriptions(sheet.getThemeDescriptions());
-                } else if (fragment.visibleDialog instanceof AlertDialog) {
-                    AlertDialog dialog = (AlertDialog) fragment.visibleDialog;
-                    addStartDescriptions(dialog.getThemeDescriptions());
-                }
-                if (i == 0) {
-                    if (accentId != -1) {
-                        theme.setCurrentAccentId(accentId);
-                        Theme.saveThemeAccents(theme, true, false, true, false);
-                    }
-                    if (temporary) {
-                        Theme.applyChatThemeTemporary(theme);
-                    } else {
-                        Theme.applyChatEmoticonTheme(theme);
-                        Theme.clearPreviousChatTheme();
-                    }
-                }
-                addEndDescriptions(descriptions);
-                if (fragment.visibleDialog instanceof BottomSheet) {
-                    addEndDescriptions(((BottomSheet) fragment.visibleDialog).getThemeDescriptions());
-                } else if (fragment.visibleDialog instanceof AlertDialog) {
-                    addEndDescriptions(((AlertDialog) fragment.visibleDialog).getThemeDescriptions());
-                }
-            }
-        }
-        int count = fragmentsStack.size() - (inPreviewMode || transitionAnimationPreviewMode ? 2 : 1);
-        for (int a = 0; a < count; a++) {
-            BaseFragment fragment = fragmentsStack.get(a);
-            fragment.clearViews();
-            fragment.setParentLayout(this);
-        }
-        setThemeAnimationValue(1.0f);
     }
 
     public void rebuildAllFragmentViews(boolean last, boolean showLastAfter) {

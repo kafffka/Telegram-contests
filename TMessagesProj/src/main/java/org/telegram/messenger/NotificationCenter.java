@@ -205,6 +205,7 @@ public class NotificationCenter {
     public static final int reloadInterface = totalEvents++;
     public static final int suggestedLangpack = totalEvents++;
     public static final int didSetNewWallpapper = totalEvents++;
+    public static final int didSetNewChatWallpapper = totalEvents++;
     public static final int proxySettingsChanged = totalEvents++;
     public static final int proxyCheckDone = totalEvents++;
     public static final int liveLocationsChanged = totalEvents++;
