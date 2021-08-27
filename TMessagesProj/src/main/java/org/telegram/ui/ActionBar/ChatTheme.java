@@ -77,80 +77,18 @@ public class ChatTheme {
         Theme.ThemeInfo parentThemeInfo = getBaseThemeInfo();
         HashMap<String, Integer> currentColorsNoAccent = Theme.getThemeFileValues(null, parentThemeInfo.assetName, null);
         currentColors.putAll(currentColorsNoAccent);
-
-        themeAccent.fillAccentColors(currentColorsNoAccent, currentColors);
-
-        int seekbarColor;
-        int accentColor = themeAccent.accentColor;
-        int accentSecondary;
-        int outMediaColor;
-
-        if (isDark) {
-            accentSecondary = 0xffeeeeee;
-            seekbarColor = 0x4dffffff;
-            outMediaColor = 0x00000000;
-            accentColor = 0xffffffff;
-        } else {
-            accentSecondary = ColorUtils.setAlphaComponent(accentColor, 116);
-            outMediaColor = 0xffffffff;
-            if (themeAccent.myMessagesGradientAccentColor1 != 0 && themeAccent.myMessagesGradientAccentColor2 == 0) {
-                outMediaColor = themeAccent.myMessagesGradientAccentColor1;
-            }
-            seekbarColor = accentSecondary;
-        }
-
-
+        themeAccent.fillAccentColors(currentColorsNoAccent, currentColors, parentThemeInfo, true);
         if (!isDark) {
             currentColors.put(Theme.key_dialogBackground, 0xffffffff);
             currentColors.put(Theme.key_dialogTextBlack, 0xff222222);
+
+            currentColors.put(Theme.key_chat_messageTextOut, 0xff000000);
+            currentColors.put(Theme.key_chat_messageTextIn, 0xff000000);
+            currentColors.put(Theme.key_chat_outReplyMessageText, 0xff000000);
+            currentColors.put(Theme.key_chat_inReplyMessageText, 0xff000000);
+            currentColors.put(Theme.key_chat_inBubble, 0xffffffff);
         } else {
             currentColors.put(Theme.key_dialogBackground, currentColors.get(Theme.key_actionBarDefault));
-        }
-
-        currentColors.put(Theme.key_chat_outAudioProgress, seekbarColor);
-        currentColors.put(Theme.key_chat_outAudioSelectedProgress, seekbarColor);
-        currentColors.put(Theme.key_chat_outAudioSeekbar, seekbarColor);
-        currentColors.put(Theme.key_chat_outAudioCacheSeekbar, seekbarColor);
-        currentColors.put(Theme.key_chat_outAudioSeekbarSelected, seekbarColor);
-        currentColors.put(Theme.key_chat_outAudioSeekbarFill, accentColor);
-
-        currentColors.put(Theme.key_chat_outVoiceSeekbar, seekbarColor);
-        currentColors.put(Theme.key_chat_outVoiceSeekbarSelected, seekbarColor);
-        currentColors.put(Theme.key_chat_outVoiceSeekbarFill, accentColor);
-
-        currentColors.put(Theme.key_chat_outSentCheck, accentColor);
-        currentColors.put(Theme.key_chat_outSentCheckSelected, accentColor);
-
-        currentColors.put(Theme.key_chat_outSentCheckRead, accentColor);
-        currentColors.put(Theme.key_chat_outSentCheckReadSelected, accentColor);
-
-        currentColors.put(Theme.key_chat_outSentClock, accentColor);
-        currentColors.put(Theme.key_chat_outSentClockSelected, accentColor);
-
-        currentColors.put(Theme.key_chat_outTimeText, accentSecondary);
-        currentColors.put(Theme.key_chat_outTimeSelectedText, accentSecondary);
-
-        currentColors.put(Theme.key_chat_outAudioDurationText, accentSecondary);
-        currentColors.put(Theme.key_chat_outAudioDurationSelectedText, accentSecondary);
-
-        currentColors.put(Theme.key_chat_outLoader, accentColor);
-        currentColors.put(Theme.key_chat_outLoaderSelected, accentColor);
-        currentColors.put(Theme.key_chat_outMediaIcon, outMediaColor);
-        currentColors.put(Theme.key_chat_outMediaIconSelected, outMediaColor);
-
-        currentColors.put(Theme.key_chat_outGreenCall, accentColor);
-        currentColors.put(Theme.key_chat_outInstant, accentColor);
-        currentColors.put(Theme.key_chat_outInstantSelected, accentColor);
-        currentColors.put(Theme.key_inappPlayerPlayPause, accentColor);
-
-        if (themeAccent.backgroundGradientOverrideColor1 != 0) {
-            currentColors.put(Theme.key_actionBarDefault, (int) themeAccent.backgroundGradientOverrideColor1);
-        } else {
-            currentColors.put(Theme.key_actionBarDefault, themeAccent.accentColor);
-        }
-
-        if (!isDark) {
-            currentColors.put(Theme.key_chat_messageTextOut, 0xff000000);
         }
 
         int textColor;
@@ -164,11 +102,9 @@ public class ChatTheme {
             textColor = 0xffffffff;
             subTextColor = 0xffeeeeee;
         }
-
         currentColors.put(Theme.key_actionBarDefaultTitle, textColor);
         currentColors.put(Theme.key_actionBarDefaultSubtitle, subTextColor);
         currentColors.put(Theme.key_actionBarDefaultIcon, textColor);
-
 
         int messageInColor = getColor(Theme.key_chat_inBubble);
         float[] hsvTemp1 = Theme.getTempHsv(1);
@@ -178,7 +114,6 @@ public class ChatTheme {
         int myMessagesAccent = Theme.getAccentColor(hsvTemp1, outBubbleColor, firstColor);
         themeInfo.setPreviewInColor(messageInColor);
         themeInfo.setPreviewOutColor(myMessagesAccent);
-
         loadChatWallpaper();
     }
 
@@ -236,18 +171,8 @@ public class ChatTheme {
                 }
                 Integer gradientToColor2 = currentColors.get(Theme.key_chat_wallpaper_gradient_to2);
                 Integer gradientToColor1 = currentColors.get(Theme.key_chat_wallpaper_gradient_to1);
-
-                FileLog.d("chat_specific | ChatTheme | loadChatWallpaper for " + themeInfo.name);
-                FileLog.d("chat_specific | ChatTheme | loadChatWallpaper backgroundColor " + backgroundColor);
-                FileLog.d("chat_specific | ChatTheme | loadChatWallpaper gradientToColor1 " + gradientToColor1);
-                FileLog.d("chat_specific | ChatTheme | loadChatWallpaper gradientToColor2 " + gradientToColor2);
-                FileLog.d("chat_specific | ChatTheme | loadChatWallpaper gradientToColor3 " + gradientToColor3);
-                if (wallpaperFile != null) {
-                    FileLog.d("chat_specific | ChatTheme | loadChatWallpaper wallpaperFile " + wallpaperFile.getAbsolutePath());
-                }
                 if (wallpaperFile != null && wallpaperFile.exists()) {
                     try {
-                        FileLog.d("chat_specific | ChatTheme | loadChatWallpaper from wallpaperFile");
                         if (backgroundColor != null && gradientToColor1 != null && gradientToColor2 != null) {
                             MotionBackgroundDrawable motionBackgroundDrawable = new MotionBackgroundDrawable(backgroundColor, gradientToColor1, gradientToColor2, gradientToColor3, false);
                             motionBackgroundDrawable.setPatternBitmap(patternIntensity, BitmapFactory.decodeFile(wallpaperFile.getAbsolutePath()));
@@ -263,14 +188,12 @@ public class ChatTheme {
                     }
                 } else if (backgroundColor != null) {
                     if (gradientToColor1 != null && gradientToColor2 != null) {
-                        FileLog.d("chat_specific | ChatTheme | loadChatWallpaper from backgroundColor and gradient colors");
                         chatWallpaper = new MotionBackgroundDrawable(backgroundColor, gradientToColor1, gradientToColor2, gradientToColor3, false);
                     }
                 }
             }
             AndroidUtilities.runOnUIThread(() -> {
                 wallpaperLoadTask = null;
-                // TODO! didSetNewChatWallpaper ?
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewChatWallpapper, this);
             });
         });
@@ -295,7 +218,6 @@ public class ChatTheme {
 
     public static void setChatThemeForUser(int userId, String emoticon) {
         if (emoticon != null) {
-            FileLog.d("chat_specific | ChatTheme | setChatThemeForUser for user = " + userId + " emoticon = " + emoticon);
             userChatThemesDict.put(userId, emoticon);
         }
     }
@@ -343,11 +265,9 @@ public class ChatTheme {
     }
 
     public static ChatTheme getChatThemeByEmoticon(String emoticon) {
-        FileLog.d("chat_specific | ChatTheme | getChatThemeByEmoticon for emoticon " + emoticon);
         ArrayList<ChatTheme> currentChatThemes = getCurrentChatThemes();
         for (int i = 0; i < currentChatThemes.size(); i++) {
             if (currentChatThemes.get(i).emoticon.equals(emoticon)) {
-                FileLog.d("chat_specific | ChatTheme | getChatThemeByEmoticon found " + currentChatThemes.get(i).themeInfo.name);
                 return currentChatThemes.get(i);
             }
         }

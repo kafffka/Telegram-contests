@@ -780,7 +780,6 @@ public class Theme {
                 if (accentsToLoad == null) {
                     accentsToLoad = new ArrayList<>();
                 }
-                FileLog.d("chat_specific | Theme | createLoader | add accent " + accent.patternSlug + " (" + chatTheme.themeInfo.name + ")");
                 accentsToLoad.add(accent);
             }
             loader = new PatternsLoader(accentsToLoad);
@@ -1074,20 +1073,29 @@ public class Theme {
 
         public OverrideWallpaperInfo overrideWallpaper;
 
+
         public boolean fillAccentColors(HashMap<String, Integer> currentColorsNoAccent, HashMap<String, Integer> currentColors) {
+            return fillAccentColors(currentColorsNoAccent, currentColors, parentTheme, false);
+        }
+
+        public boolean fillAccentColors(HashMap<String, Integer> currentColorsNoAccent, HashMap<String, Integer> currentColors, ThemeInfo realParentTheme, boolean forChatTheme) {
             boolean isMyMessagesGradientColorsNear = false;
 
             float[] hsvTemp1 = getTempHsv(1);
             float[] hsvTemp2 = getTempHsv(2);
+            int accentBaseColor = realParentTheme.accentBaseColor;
 
-            Color.colorToHSV(parentTheme.accentBaseColor, hsvTemp1);
+            Color.colorToHSV(accentBaseColor, hsvTemp1);
             Color.colorToHSV(accentColor, hsvTemp2);
-            boolean isDarkTheme = parentTheme.isDark();
+            boolean isDarkTheme = realParentTheme.isDark();
 
-            if (accentColor != parentTheme.accentBaseColor) {
+            if (accentColor != accentBaseColor) {
                 HashSet<String> keys = new HashSet<>(currentColorsNoAccent.keySet());
                 keys.addAll(defaultColors.keySet());
                 keys.removeAll(themeAccentExclusionKeys);
+                if (forChatTheme) {
+                    keys.removeAll(chatThemeAccentExclusionKeys);
+                }
 
                 for (String key : keys) {
                     Integer color = currentColorsNoAccent.get(key);
@@ -1100,7 +1108,9 @@ public class Theme {
                     if (color == null) {
                         color = defaultColors.get(key);
                     }
-
+                    if (color == null) {
+                        continue;
+                    }
                     int newColor = changeColorAccent(hsvTemp1, hsvTemp2, color, isDarkTheme);
                     if (newColor != color) {
                         currentColors.put(key, newColor);
@@ -1121,7 +1131,7 @@ public class Theme {
                 myMessagesAccent = getAccentColor(hsvTemp1, color, firstColor);
             }
 
-            if (myMessagesAccent != 0 && (parentTheme.accentBaseColor != 0 && myMessagesAccent != parentTheme.accentBaseColor || accentColor != 0 && accentColor != myMessagesAccent)) {
+            if (myMessagesAccent != 0 && (accentBaseColor != 0 && myMessagesAccent != accentBaseColor || accentColor != 0 && accentColor != myMessagesAccent)) {
                 Color.colorToHSV(myMessagesAccent, hsvTemp2);
                 for (String key : myMessagesColorKeys) {
                     Integer color = currentColorsNoAccent.get(key);
@@ -1143,7 +1153,7 @@ public class Theme {
                     }
                 }
             }
-            if (!isMyMessagesGradientColorsNear) {
+            if (!isMyMessagesGradientColorsNear || (forChatTheme && isDarkTheme)) {
                 if (myMessagesGradientAccentColor1 != 0) {
                     int textColor;
                     int subTextColor;
@@ -2244,7 +2254,7 @@ public class Theme {
     public static ArrayList<ThemeInfo> chatThemes;
     public static ArrayList<ThemeInfo> chatDarkThemes;
     private static ThemeInfo previousChatTheme;
-    private static HashMap<String, ThemeInfo> themesDict;
+    public static HashMap<String, ThemeInfo> themesDict;
     private static HashMap<String, ThemeInfo> chatThemesDict;
     private static ThemeInfo currentTheme;
     private static ThemeInfo currentNightTheme;
@@ -3325,6 +3335,7 @@ public class Theme {
     private static HashMap<String, Integer> defaultColors = new HashMap<>();
     private static HashMap<String, String> fallbackKeys = new HashMap<>();
     private static HashSet<String> themeAccentExclusionKeys = new HashSet<>();
+    private static HashSet<String> chatThemeAccentExclusionKeys = new HashSet<>();
     private static HashMap<String, Integer> currentColorsNoAccent;
     private static HashMap<String, Integer> currentColors;
     private static HashMap<String, Integer> animatingColors;
@@ -4330,6 +4341,15 @@ public class Theme {
         themeAccentExclusionKeys.add(key_voipgroup_mutedByAdminGradient3);
         themeAccentExclusionKeys.add(key_voipgroup_mutedByAdminMuteButton);
         themeAccentExclusionKeys.add(key_voipgroup_mutedByAdminMuteButtonDisabled);
+
+        chatThemeAccentExclusionKeys.add(key_chats_attachMessage);
+        chatThemeAccentExclusionKeys.add(key_chats_unreadCounter);
+        chatThemeAccentExclusionKeys.add(key_chats_unreadCounterMuted);
+        chatThemeAccentExclusionKeys.add(key_chats_unreadCounterText);
+        chatThemeAccentExclusionKeys.add(key_chats_actionMessage);
+        chatThemeAccentExclusionKeys.add(key_chats_sentCheck);
+        chatThemeAccentExclusionKeys.add(key_chats_sentReadCheck);
+        chatThemeAccentExclusionKeys.add(key_chats_verifiedCheck);
 
         myMessagesColorKeys.add(key_chat_outGreenCall);
         myMessagesColorKeys.add(key_chat_outBubble);

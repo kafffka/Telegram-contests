@@ -1433,7 +1433,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             return false;
         }
 
-        if (currentUser != null) {
+        if (currentUser != null && !isSecretChat()) {
             ChatTheme.loadRemoteChatThemes(currentAccount, false);
             if (!ChatTheme.chatThemes.isEmpty() && ChatTheme.getChatThemeForUser(userId) != null) {
                 chatTheme = ChatTheme.getChatThemeForUser(userId);
@@ -2404,16 +2404,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (searchItem != null) {
                 headerItem.addSubItem(search, R.drawable.msg_search, LocaleController.getString("Search", R.string.Search));
             }
-//            if (callItem != null) {
-//                headerItem.addSubItem(call, R.drawable.ic_call, LocaleController.getString("Call", R.string.Call));
-//            }
             if (currentChat != null && !currentChat.creator && !ChatObject.hasAdminRights(currentChat)) {
                 headerItem.addSubItem(report, R.drawable.msg_report, LocaleController.getString("ReportChat", R.string.ReportChat));
             }
             if (currentUser != null) {
                 addContactItem = headerItem.addSubItem(share_contact, R.drawable.msg_addcontact, "");
             }
-            if (currentUser != null) {
+            if (currentUser != null && !isSecretChat()) {
                 headerItem.addSubItem(change_colors, R.drawable.msg_colors, LocaleController.getString("ChangeColors", R.string.ChangeColors));
             }
             if (currentEncryptedChat != null) {
@@ -3075,7 +3072,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (avatarContainer != null && avatarContainer.getLayoutParams() != null) {
                             ((MarginLayoutParams) avatarContainer.getLayoutParams()).rightMargin = AndroidUtilities.dp(96);
                         }
-                        callIconItem.setVisibility(View.VISIBLE);
+                        if (callIconItem != null) {
+                            callIconItem.setVisibility(View.VISIBLE);
+                        }
                     } else if (callIconItem != null) {
                         callIconItem.setVisibility(View.GONE);
                     }
@@ -15282,14 +15281,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     getMediaDataController().loadPinnedMessages(dialog_id, 0, userInfo.pinned_msg_id);
                     loadingPinnedMessagesList = true;
                 }
-
-//                if (userInfo.theme_emoticon != null && !userInfo.theme_emoticon.isEmpty()) {
-                    FileLog.d("chat_specific | ChatActivity | notification load user and set chatTheme");
+                if (!isSecretChat()) {
                     ChatTheme.setChatThemeForUser(userInfo.user.id, userInfo.theme_emoticon);
                     chatTheme = ChatTheme.getChatThemeForUser(userInfo.user.id);
                     getParentLayout().setChatThemedValues(chatTheme, userInfo.user.id, false);
-
-//                }
+                } else {
+                    chatTheme = null;
+                    getParentLayout().setChatThemedValues(chatTheme, userInfo.user.id, false);
+                }
             }
         } else if (id == NotificationCenter.didSetNewWallpapper) {
             if (fragmentView != null) {
@@ -15442,10 +15441,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
         } else if (id == NotificationCenter.needSetDayNightChatTheme) {
-            ChatTheme theme = (ChatTheme) args[0];
-            boolean temporary = (Boolean) args[1];
-            chatTheme = theme;
-            getParentLayout().setChatThemedValues(theme, currentUser.id, temporary);
+            if (!isSecretChat()) {
+                ChatTheme theme = (ChatTheme) args[0];
+                boolean temporary = (Boolean) args[1];
+                chatTheme = theme;
+                getParentLayout().setChatThemedValues(theme, currentUser.id, temporary);
+            }
         }
     }
 

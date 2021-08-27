@@ -1637,7 +1637,6 @@ public class ActionBarLayout extends FrameLayout {
                 int color = Color.argb(a, r, g, b);
                 ThemeDescription description = descriptions.get(i);
                 Theme.setAnimatedColor(description.getCurrentKey(), color);
-                FileLog.d("chat_specific | ActionBar | setThemeAnimationValue for key " + description.getCurrentKey());
                 description.setColor(color, false, false);
             }
         }
