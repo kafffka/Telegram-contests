@@ -1622,6 +1622,19 @@ public class ActionBarMenuItem extends FrameLayout {
         }
     }
 
+    public void setGoneIfAllSubItemsAreGone() {
+        boolean allSubItemsGone = true;
+        for (int a = 0, N = popupLayout.getItemsCount(); a < N; a++) {
+            if (popupLayout.getItemAt(a).getVisibility() != GONE) {
+                allSubItemsGone = false;
+                break;
+            }
+        }
+        if (allSubItemsGone) {
+            setVisibility(GONE);
+        }
+    }
+
     public void requestFocusOnSearchView() {
         if (searchContainer.getWidth() != 0 && !searchField.isFocused()) {
             searchField.requestFocus();

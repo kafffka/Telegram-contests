@@ -1529,6 +1529,12 @@ public class MessageObject {
             } else {
                 messageText = replaceWithLink(LocaleController.getString("EventLogToggledSignaturesOff", R.string.EventLogToggledSignaturesOff), "un1", fromUser);
             }
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionToggleNoForwards) {
+            if (((TLRPC.TL_channelAdminLogEventActionToggleNoForwards) event.action).new_value) {
+                messageText = replaceWithLink(LocaleController.getString("EventLogToggledNoForwardsOn", R.string.EventLogToggledNoForwardsOn), "un1", fromUser);
+            } else {
+                messageText = replaceWithLink(LocaleController.getString("EventLogToggledNoForwardsOff", R.string.EventLogToggledNoForwardsOff), "un1", fromUser);
+            }
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionToggleInvites) {
             if (((TLRPC.TL_channelAdminLogEventActionToggleInvites) event.action).new_value) {
                 messageText = replaceWithLink(LocaleController.getString("EventLogToggledInvitesOn", R.string.EventLogToggledInvitesOn), "un1", fromUser);
@@ -4198,7 +4204,12 @@ public class MessageObject {
         } else if (type == TYPE_STICKER || type == TYPE_ANIMATED_STICKER) {
             return false;
         } else if (messageOwner.fwd_from != null && messageOwner.fwd_from.from_id instanceof TLRPC.TL_peerChannel && !isOutOwner()) {
-            return true;
+            TLRPC.Chat chat = messageOwner.peer_id != null && messageOwner.peer_id.channel_id != 0 ? getChat(null, null, messageOwner.peer_id.channel_id) : null;
+            if (ChatObject.isChannel(chat) && chat.noforwards) {
+                return false;
+            } else {
+                return true;
+            }
         } else if (isFromUser()) {
             if (messageOwner.media instanceof TLRPC.TL_messageMediaEmpty || messageOwner.media == null || messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && !(messageOwner.media.webpage instanceof TLRPC.TL_webPage)) {
                 return false;
@@ -4218,6 +4229,10 @@ public class MessageObject {
             }
         } else if (messageOwner.from_id instanceof TLRPC.TL_peerChannel || messageOwner.post) {
             if (isSupergroup()) {
+                return false;
+            }
+            TLRPC.Chat chat = messageOwner.peer_id != null && messageOwner.peer_id.channel_id != 0 ? getChat(null, null, messageOwner.peer_id.channel_id) : null;
+            if (ChatObject.isChannel(chat) && chat.noforwards) {
                 return false;
             }
             if (messageOwner.peer_id.channel_id != 0 && (messageOwner.via_bot_id == 0 && messageOwner.reply_to == null || type != TYPE_STICKER && type != TYPE_ANIMATED_STICKER)) {

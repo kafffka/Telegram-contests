@@ -393,6 +393,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     private LinearLayout actionModeLayout;
     private ImageView closeButton;
     private BackDrawable backDrawable;
+    private HintView forwardRestrictedHintView;
     private ArrayList<SharedPhotoVideoCell> cellCache = new ArrayList<>(10);
     private ArrayList<SharedPhotoVideoCell> cache = new ArrayList<>(10);
     private ArrayList<SharedAudioCell> audioCellCache = new ArrayList<>(10);
@@ -423,6 +424,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     private boolean scrolling;
     private long mergeDialogId;
     private TLRPC.ChatFull info;
+    private boolean hasRestrictionToSavingContent;
 
     private AnimatorSet tabsAnimation;
     private boolean tabsAnimationInProgress;
@@ -1116,6 +1118,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.messagePlayingDidReset);
         profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.messagePlayingDidStart);
+        profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
 
         for (int a = 0; a < 10; a++) {
             //cellCache.add(new SharedPhotoVideoCell(context));
@@ -1432,6 +1435,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             actionModeLayout.addView(forwardItem, new LinearLayout.LayoutParams(AndroidUtilities.dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
             actionModeViews.add(forwardItem);
             forwardItem.setOnClickListener(v -> onActionBarItemClick(forward));
+            hasRestrictionToSavingContent = chatInfo != null && parent.getMessagesController().getChat(chatInfo.id).noforwards;
+            updateForwardItemEnabled();
         }
         deleteItem = new ActionBarMenuItem(context, null, Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
         deleteItem.setIcon(R.drawable.msg_delete);
@@ -2853,6 +2858,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.messagePlayingDidReset);
         profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.messagePlayingDidStart);
+        profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
     }
 
     private void checkCurrentTabValid() {
@@ -3030,63 +3036,67 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 cantDeleteMessagesCount = 0;
             }, null);
         } else if (id == forward) {
-            Bundle args = new Bundle();
-            args.putBoolean("onlySelect", true);
-            args.putInt("dialogsType", 3);
-            DialogsActivity fragment = new DialogsActivity(args);
-            fragment.setDelegate((fragment1, dids, message, param) -> {
-                ArrayList<MessageObject> fmessages = new ArrayList<>();
-                for (int a = 1; a >= 0; a--) {
-                    ArrayList<Integer> ids = new ArrayList<>();
-                    for (int b = 0; b < selectedFiles[a].size(); b++) {
-                        ids.add(selectedFiles[a].keyAt(b));
-                    }
-                    Collections.sort(ids);
-                    for (Integer id1 : ids) {
-                        if (id1 > 0) {
-                            fmessages.add(selectedFiles[a].get(id1));
+            if (hasRestrictionToSavingContent) {
+                showForwardRestrictedHint();
+            } else {
+                Bundle args = new Bundle();
+                args.putBoolean("onlySelect", true);
+                args.putInt("dialogsType", 3);
+                DialogsActivity fragment = new DialogsActivity(args);
+                fragment.setDelegate((fragment1, dids, message, param) -> {
+                    ArrayList<MessageObject> fmessages = new ArrayList<>();
+                    for (int a = 1; a >= 0; a--) {
+                        ArrayList<Integer> ids = new ArrayList<>();
+                        for (int b = 0; b < selectedFiles[a].size(); b++) {
+                            ids.add(selectedFiles[a].keyAt(b));
                         }
+                        Collections.sort(ids);
+                        for (Integer id1 : ids) {
+                            if (id1 > 0) {
+                                fmessages.add(selectedFiles[a].get(id1));
+                            }
+                        }
+                        selectedFiles[a].clear();
                     }
-                    selectedFiles[a].clear();
-                }
-                cantDeleteMessagesCount = 0;
-                showActionMode(false);
+                    cantDeleteMessagesCount = 0;
+                    showActionMode(false);
 
-                if (dids.size() > 1 || dids.get(0) == profileActivity.getUserConfig().getClientUserId() || message != null) {
-                    updateRowsSelection();
-                    for (int a = 0; a < dids.size(); a++) {
-                        long did = dids.get(a);
-                        if (message != null) {
-                            profileActivity.getSendMessagesHelper().sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null);
+                    if (dids.size() > 1 || dids.get(0) == profileActivity.getUserConfig().getClientUserId() || message != null) {
+                        updateRowsSelection();
+                        for (int a = 0; a < dids.size(); a++) {
+                            long did = dids.get(a);
+                            if (message != null) {
+                                profileActivity.getSendMessagesHelper().sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0, null);
+                            }
+                            profileActivity.getSendMessagesHelper().sendMessage(fmessages, did, false, false, true, 0);
                         }
-                        profileActivity.getSendMessagesHelper().sendMessage(fmessages, did, false, false, true, 0);
-                    }
-                    fragment1.finishFragment();
-                } else {
-                    long did = dids.get(0);
-                    Bundle args1 = new Bundle();
-                    args1.putBoolean("scrollToTopOnResume", true);
-                    if (DialogObject.isEncryptedDialog(did)) {
-                        args1.putInt("enc_id", DialogObject.getEncryptedChatId(did));
+                        fragment1.finishFragment();
                     } else {
-                        if (DialogObject.isUserDialog(did)) {
-                            args1.putLong("user_id", did);
+                        long did = dids.get(0);
+                        Bundle args1 = new Bundle();
+                        args1.putBoolean("scrollToTopOnResume", true);
+                        if (DialogObject.isEncryptedDialog(did)) {
+                            args1.putInt("enc_id", DialogObject.getEncryptedChatId(did));
                         } else {
-                            args1.putLong("chat_id", -did);
+                            if (DialogObject.isUserDialog(did)) {
+                                args1.putLong("user_id", did);
+                            } else {
+                                args1.putLong("chat_id", -did);
+                            }
+                            if (!profileActivity.getMessagesController().checkCanOpenChat(args1, fragment1)) {
+                                return;
+                            }
                         }
-                        if (!profileActivity.getMessagesController().checkCanOpenChat(args1, fragment1)) {
-                            return;
-                        }
+
+                        profileActivity.getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
+
+                        ChatActivity chatActivity = new ChatActivity(args1);
+                        fragment1.presentFragment(chatActivity, true);
+                        chatActivity.showFieldPanelForForward(true, fmessages);
                     }
-
-                    profileActivity.getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
-
-                    ChatActivity chatActivity = new ChatActivity(args1);
-                    fragment1.presentFragment(chatActivity, true);
-                    chatActivity.showFieldPanelForForward(true, fmessages);
-                }
-            });
-            profileActivity.presentFragment(fragment);
+                });
+                profileActivity.presentFragment(fragment);
+            }
         } else if (id == gotochat) {
             if (selectedFiles[0].size() + selectedFiles[1].size() != 1) {
                 return;
@@ -3800,6 +3810,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     }
                 }
             }
+        } else if (id == NotificationCenter.chatInfoDidLoad) {
+            TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
+            hasRestrictionToSavingContent = profileActivity.getMessagesController().getChat(chatFull.id).noforwards;
+            updateForwardItemEnabled();
         }
     }
 
@@ -3980,6 +3994,33 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 sharedMediaData[a].max_id[1] = info.migrated_from_max_id;
                 sharedMediaData[a].endReached[1] = false;
             }
+        }
+    }
+
+    public void setHasRestrictionToSavingContent(boolean hasRestrictionToSavingContent) {
+        this.hasRestrictionToSavingContent = hasRestrictionToSavingContent;
+    }
+
+    public void updateForwardItemEnabled() {
+        if (forwardItem != null) {
+            forwardItem.setAlpha(!hasRestrictionToSavingContent ? 1.0f : 0.5f);
+        }
+    }
+
+    private void showForwardRestrictedHint() {
+        if (forwardItem != null) {
+            if (forwardRestrictedHintView == null) {
+                forwardRestrictedHintView = new HintView(profileActivity.getParentActivity(), 4, true, profileActivity.getResourceProvider());
+                addView(forwardRestrictedHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
+                if (ChatObject.isChannel(MessagesController.getInstance(profileActivity.getCurrentAccount()).getChat(info.id))) {
+                    forwardRestrictedHintView.setText(LocaleController.getString("ForwardsFromChannelRestricted", R.string.ForwardsFromChannelRestricted));
+                } else {
+                    forwardRestrictedHintView.setText(LocaleController.getString("ForwardsFromGroupRestricted", R.string.ForwardsFromGroupRestricted));
+                }
+                forwardRestrictedHintView.setAlpha(0.0f);
+                forwardRestrictedHintView.setVisibility(View.INVISIBLE);
+            }
+            forwardRestrictedHintView.showForView(forwardItem, true);
         }
     }
 
@@ -4502,6 +4543,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 int i = index - sharedMediaData[selectedMode].startOffset;
                 if (i >= 0 && i < sharedMediaData[selectedMode].messages.size()) {
                     PhotoViewer.getInstance().setParentActivity(profileActivity.getParentActivity());
+                    PhotoViewer.getInstance().setParentHasRestrictionToSavingContent(hasRestrictionToSavingContent);
                     PhotoViewer.getInstance().openPhoto(sharedMediaData[selectedMode].messages, i, dialog_id, mergeDialogId, provider);
                 }
             } else if (selectedMode == 2 || selectedMode == 4) {
@@ -4510,6 +4552,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 }
             } else if (selectedMode == 5) {
                 PhotoViewer.getInstance().setParentActivity(profileActivity.getParentActivity());
+                PhotoViewer.getInstance().setParentHasRestrictionToSavingContent(hasRestrictionToSavingContent);
                 index = sharedMediaData[selectedMode].messages.indexOf(message);
                 if (index < 0) {
                     ArrayList<MessageObject> documents = new ArrayList<>();
@@ -4525,6 +4568,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     if (cell.isLoaded()) {
                         if (message.canPreviewDocument()) {
                             PhotoViewer.getInstance().setParentActivity(profileActivity.getParentActivity());
+                            PhotoViewer.getInstance().setParentHasRestrictionToSavingContent(hasRestrictionToSavingContent);
                             index = sharedMediaData[selectedMode].messages.indexOf(message);
                             if (index < 0) {
                                 ArrayList<MessageObject> documents = new ArrayList<>();

@@ -359,6 +359,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private boolean attachedToWindow;
 
     private boolean isUpdating;
+    private boolean needUpdateChat = false;
 
     private RadialProgress2 radialProgress;
     private RadialProgress2 videoRadialProgress;
@@ -2920,6 +2921,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return currentUser;
     }
 
+    public TLRPC.Chat getCurrentChat() {
+        return currentChat;
+    }
+
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
@@ -3070,7 +3075,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 currentMessageObject == messageObject && (isUserDataChanged() || photoNotSet) ||
                 lastPostAuthor != messageObject.messageOwner.post_author ||
                 wasPinned != isPinned ||
-                newReply != lastReplyMessage;
+                newReply != lastReplyMessage ||
+                needUpdateChat;
         boolean groupChanged = groupedMessages != currentMessagesGroup;
         boolean pollChanged = false;
         if (drawCommentButton || drawSideButton == 3 && !((hasDiscussion && messageObject.isLinkedToChat(linkedChatId) || isRepliesChat) && (currentPosition == null || currentPosition.siblingHeights == null && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0 || currentPosition.siblingHeights != null && (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0))) {
@@ -3128,6 +3134,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             currentMessagesGroup = groupedMessages;
             lastTime = -2;
             lastPostAuthor = messageObject.messageOwner.post_author;
+            needUpdateChat = false;
             isHighlightedAnimated = false;
             widthBeforeNewTimeLine = -1;
             if (currentMessagesGroup != null && (currentMessagesGroup.posArray.size() > 1)) {
@@ -6737,6 +6744,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     public void setIsUpdating(boolean value) {
         isUpdating = true;
+    }
+
+    public void setNeedUpdateChat() {
+        needUpdateChat = true;
     }
 
     public void setMessageObject(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages, boolean bottomNear, boolean topNear) {

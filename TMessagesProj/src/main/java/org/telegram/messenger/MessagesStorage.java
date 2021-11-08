@@ -8147,6 +8147,7 @@ public class MessagesStorage extends BaseController {
                                 oldChat.megagroup = chat.megagroup;
                                 oldChat.call_not_empty = chat.call_not_empty;
                                 oldChat.call_active = chat.call_active;
+                                oldChat.noforwards = chat.noforwards;
                                 if (chat.default_banned_rights != null) {
                                     oldChat.default_banned_rights = chat.default_banned_rights;
                                     oldChat.flags |= 262144;

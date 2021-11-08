@@ -2924,6 +2924,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     oldChat.megagroup = chat.megagroup;
                     oldChat.call_not_empty = chat.call_not_empty;
                     oldChat.call_active = chat.call_active;
+                    oldChat.noforwards = chat.noforwards;
                     if (chat.default_banned_rights != null) {
                         oldChat.default_banned_rights = chat.default_banned_rights;
                         oldChat.flags |= 262144;
@@ -2998,6 +2999,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 chat.broadcast = oldChat.broadcast;
                 chat.verified = oldChat.verified;
                 chat.megagroup = oldChat.megagroup;
+                chat.noforwards = oldChat.noforwards;
 
                 if (oldChat.default_banned_rights != null) {
                     chat.default_banned_rights = oldChat.default_banned_rights;
@@ -9144,6 +9146,23 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                     chat.username = userName;
                     ArrayList<TLRPC.Chat> arrayList = new ArrayList<>();
+                    arrayList.add(chat);
+                    getMessagesStorage().putUsersAndChats(null, arrayList, true, true);
+                    getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_CHAT);
+                });
+            }
+        }, ConnectionsManager.RequestFlagInvokeAfter);
+    }
+
+    public void toggleChannelOrGroupNoForwards(TLRPC.Chat chat, boolean enabled) {
+        TLRPC.TL_messages_toggleNoForwards req = new TLRPC.TL_messages_toggleNoForwards();
+        req.peer = getInputPeer(chat);
+        req.enabled = enabled;
+        getConnectionsManager().sendRequest(req, (response, error) -> {
+            if (response instanceof TLRPC.TL_boolTrue) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    chat.noforwards = enabled;
+                    ArrayList<TLRPC.Chat> arrayList = new ArrayList<>(1);
                     arrayList.add(chat);
                     getMessagesStorage().putUsersAndChats(null, arrayList, true, true);
                     getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_CHAT);
