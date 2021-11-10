@@ -6047,8 +6047,18 @@ public class MessagesController extends BaseController implements NotificationCe
             return false;
         }
         if (dialogId < 0) {
+            TLRPC.Peer peerSendAs = getChatFull(-dialogId).default_send_as;
             if (ChatObject.shouldSendAnonymously(getChat(-dialogId))) {
                 return false;
+            } else if (peerSendAs != null) {
+                TLRPC.InputPeer inputPeer = getInputPeer(peerSendAs);
+                if (inputPeer instanceof TLRPC.TL_inputPeerUser) {
+                    if (inputPeer.user_id != getUserConfig().getClientUserId()) {
+                        return false;
+                    }
+                } else if (inputPeer instanceof TLRPC.TL_inputPeerChannel || inputPeer instanceof TLRPC.TL_inputPeerChat) {
+                    return false;
+                }
             }
         } else {
             TLRPC.User user = getUser(dialogId);

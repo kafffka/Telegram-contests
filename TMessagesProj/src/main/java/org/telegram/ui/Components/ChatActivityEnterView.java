@@ -325,6 +325,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private ActionBarPopupWindow.ActionBarPopupWindowLayout sendPopupLayout;
     private ImageView cancelBotButton;
     private ImageView[] emojiButton = new ImageView[2];
+    public SelectSenderView selectSenderView;
     @SuppressWarnings("FieldCanBeLocal")
     private ImageView emojiButton1;
     @SuppressWarnings("FieldCanBeLocal")
@@ -2410,6 +2411,19 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 delegate.didPressAttachButton();
             });
             attachButton.setContentDescription(LocaleController.getString("AccDescrAttachButton", R.string.AccDescrAttachButton));
+
+            selectSenderView = new SelectSenderView(context, currentAccount);
+            selectSenderView.setOnClickListener(v -> {
+                if (selectSenderView.isClosing()) {
+                    selectSenderView.cancelCloseAnimation();
+                } else {
+                    selectSenderView.cancelCloseAnimation();
+                    selectSenderView.startCloseAnimation();
+                    parentFragment.showSelectSenderPopup();
+                }
+            });
+            frameLayout.addView(selectSenderView, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT, 10, 0, 0, 10));
+            AndroidUtilities.updateViewVisibilityAnimated(selectSenderView, false, 1f, false);
         }
 
         recordedAudioPanel = new FrameLayout(context);
@@ -3788,7 +3802,25 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         if (emojiView != null) {
             emojiView.setChatInfo(info);
         }
+
+        if (selectSenderView != null) {
+            boolean isChangePeerAvailable = isChangePeerAvailable();
+            if (isChangePeerAvailable) {
+                selectSenderView.setPeer(info.default_send_as);
+            }
+            AndroidUtilities.updateViewVisibilityAnimated(selectSenderView, isChangePeerAvailable, 1f, false);
+        }
+
         setSlowModeTimer(chatInfo.slowmode_next_send_date);
+    }
+
+    private boolean isChangePeerAvailable() {
+        if (info != null) {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(info.id);
+            return ((chat.megagroup && chat.username != null) || chat.has_geo || (chat.megagroup && chat.has_link)) && info.default_send_as != null;
+        } else {
+            return false;
+        }
     }
 
     public void checkRoundVideo() {
@@ -3957,6 +3989,18 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         ObjectAnimator.ofFloat(botCommandsMenuButton, View.SCALE_Y, 1.0f)
                 );
             }
+
+            if (selectSenderView != null) {
+                selectSenderView.setAlpha(0f);
+                selectSenderView.setScaleY(0);
+                selectSenderView.setScaleX(0);
+
+                recordPannelAnimation.playTogether(
+                        ObjectAnimator.ofFloat(selectSenderView, View.ALPHA, 1.0f),
+                        ObjectAnimator.ofFloat(selectSenderView, View.SCALE_X, 1.0f),
+                        ObjectAnimator.ofFloat(selectSenderView, View.SCALE_Y, 1.0f)
+                );
+            }
             recordPannelAnimation.setDuration(150);
             recordPannelAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -4045,6 +4089,18 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         ObjectAnimator.ofFloat(botCommandsMenuButton, View.ALPHA, 1.0f),
                         ObjectAnimator.ofFloat(botCommandsMenuButton, View.SCALE_X, 1.0f),
                         ObjectAnimator.ofFloat(botCommandsMenuButton, View.SCALE_Y, 1.0f)
+                );
+            }
+
+            if (selectSenderView != null) {
+                selectSenderView.setAlpha(0f);
+                selectSenderView.setScaleY(0);
+                selectSenderView.setScaleX(0);
+
+                iconsEndAnimator.playTogether(
+                        ObjectAnimator.ofFloat(selectSenderView, View.ALPHA, 1.0f),
+                        ObjectAnimator.ofFloat(selectSenderView, View.SCALE_X, 1.0f),
+                        ObjectAnimator.ofFloat(selectSenderView, View.SCALE_Y, 1.0f)
                 );
             }
 
@@ -5110,6 +5166,14 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 );
             }
 
+            if (selectSenderView != null) {
+                iconChanges.playTogether(
+                        ObjectAnimator.ofFloat(selectSenderView, View.SCALE_Y, 0),
+                        ObjectAnimator.ofFloat(selectSenderView, View.SCALE_X, 0),
+                        ObjectAnimator.ofFloat(selectSenderView, View.ALPHA, 0)
+                );
+            }
+
             AnimatorSet viewTransition = new AnimatorSet();
             viewTransition.playTogether(
                     ObjectAnimator.ofFloat(messageEditText, View.TRANSLATION_X, AndroidUtilities.dp(20)),
@@ -5224,6 +5288,13 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             ObjectAnimator.ofFloat(botCommandsMenuButton, View.SCALE_Y, 1),
                             ObjectAnimator.ofFloat(botCommandsMenuButton, View.SCALE_X, 1),
                             ObjectAnimator.ofFloat(botCommandsMenuButton, View.ALPHA, 1)
+                    );
+                }
+                if (selectSenderView != null) {
+                    runningAnimationAudio.playTogether(
+                            ObjectAnimator.ofFloat(selectSenderView, View.SCALE_Y, 1),
+                            ObjectAnimator.ofFloat(selectSenderView, View.SCALE_X, 1),
+                            ObjectAnimator.ofFloat(selectSenderView, View.ALPHA, 1)
                     );
                 }
                 if (audioSendButton != null) {
@@ -5361,6 +5432,14 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     );
                 }
 
+                if (selectSenderView != null) {
+                    iconsAnimator.playTogether(
+                            ObjectAnimator.ofFloat(selectSenderView, View.ALPHA, 0),
+                            ObjectAnimator.ofFloat(selectSenderView, View.SCALE_X, 0),
+                            ObjectAnimator.ofFloat(selectSenderView, View.SCALE_Y, 0)
+                    );
+                }
+
                 iconsAnimator.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -5425,6 +5504,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             botCommandsMenuButton.setScaleX(0f);
                             botCommandsMenuButton.setScaleY(0f);
                         }
+                        if (selectSenderView != null) {
+                            selectSenderView.setAlpha(0f);
+                            selectSenderView.setScaleX(0f);
+                            selectSenderView.setScaleY(0f);
+                        }
                     }
                 });
 
@@ -5452,6 +5536,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             ObjectAnimator.ofFloat(botCommandsMenuButton, View.SCALE_Y, 1),
                             ObjectAnimator.ofFloat(botCommandsMenuButton, View.SCALE_X, 1),
                             ObjectAnimator.ofFloat(botCommandsMenuButton, View.ALPHA, 1));
+                }
+                if (selectSenderView != null) {
+                    iconsAnimator.playTogether(
+                            ObjectAnimator.ofFloat(selectSenderView, View.SCALE_Y, 1),
+                            ObjectAnimator.ofFloat(selectSenderView, View.SCALE_X, 1),
+                            ObjectAnimator.ofFloat(selectSenderView, View.ALPHA, 1));
                 }
                 AnimatorSet recordTimer = new AnimatorSet();
                 recordTimer.playTogether(
@@ -5608,6 +5698,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             ObjectAnimator.ofFloat(botCommandsMenuButton, View.SCALE_Y, 1),
                             ObjectAnimator.ofFloat(botCommandsMenuButton, View.SCALE_X, 1),
                             ObjectAnimator.ofFloat(botCommandsMenuButton, View.ALPHA, 1));
+                }
+                if (selectSenderView != null) {
+                    iconsAnimator.playTogether(
+                            ObjectAnimator.ofFloat(selectSenderView, View.SCALE_Y, 1),
+                            ObjectAnimator.ofFloat(selectSenderView, View.SCALE_X, 1),
+                            ObjectAnimator.ofFloat(selectSenderView, View.ALPHA, 1));
                 }
                 if (audioSendButton != null) {
                     audioSendButton.setScaleX(1f);
@@ -8406,6 +8502,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 ((MarginLayoutParams) emojiButton[i].getLayoutParams()).leftMargin = AndroidUtilities.dp(10) + botCommandsMenuButton.getMeasuredWidth();
             }
             ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = AndroidUtilities.dp(57) + botCommandsMenuButton.getMeasuredWidth();
+        } else if (selectSenderView != null && selectSenderView.getTag() != null) {
+            selectSenderView.measure(widthMeasureSpec, heightMeasureSpec);
+            for (int i = 0; i < emojiButton.length; i++) {
+                ((MarginLayoutParams) emojiButton[i].getLayoutParams()).leftMargin = AndroidUtilities.dp(10) + selectSenderView.getMeasuredWidth();
+            }
+            ((MarginLayoutParams) messageEditText.getLayoutParams()).leftMargin = AndroidUtilities.dp(57) + selectSenderView.getMeasuredWidth();
         } else {
             for (int i = 0; i < emojiButton.length; i++) {
                 ((MarginLayoutParams) emojiButton[i].getLayoutParams()).leftMargin = AndroidUtilities.dp(3);

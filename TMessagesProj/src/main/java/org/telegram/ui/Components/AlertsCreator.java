@@ -237,6 +237,9 @@ public class AlertsCreator {
                 case "CHAT_FORWARDS_RESTRICTED":
                     showSimpleToast(fragment, LocaleController.getString("ChatForwardsRestricted", R.string.ChatForwardsRestricted));
                     break;
+                case "SEND_AS_PEER_INVALID":
+                    showSimpleToast(fragment, LocaleController.getString("ChatSendAsPeerInvalid", R.string.ChatSendAsPeerInvalid));
+                    break;
             }
         } else if (request instanceof TLRPC.TL_messages_importChatInvite) {
             if (error.text.startsWith("FLOOD_WAIT")) {
