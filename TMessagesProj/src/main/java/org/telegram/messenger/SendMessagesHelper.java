@@ -2114,6 +2114,15 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             getStatsController().incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_MESSAGES, sentCount);
                         } else {
                             AndroidUtilities.runOnUIThread(() -> AlertsCreator.processError(currentAccount, error, null, req));
+                            if (error.text.equals("CHAT_FORWARDS_RESTRICTED")) {
+                                if (msgObj.messageOwner.from_id != null) {
+                                    if (msgObj.messageOwner.from_id instanceof TLRPC.TL_peerChat) {
+                                        getMessagesController().loadFullChat(msgObj.messageOwner.peer_id.chat_id, 0, true);
+                                    } else if (msgObj.messageOwner.from_id instanceof TLRPC.TL_peerChannel) {
+                                        getMessagesController().loadFullChat(msgObj.messageOwner.peer_id.channel_id, 0, true);
+                                    }
+                                }
+                            }
                         }
                         for (int a1 = 0; a1 < newMsgObjArr.size(); a1++) {
                             final TLRPC.Message newMsgObj1 = newMsgObjArr.get(a1);
