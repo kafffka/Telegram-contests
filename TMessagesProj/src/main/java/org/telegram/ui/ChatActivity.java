@@ -25136,7 +25136,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (response != null) {
                 TLRPC.TL_channels_sendAsPeers res = (TLRPC.TL_channels_sendAsPeers) response;
-                ChatSendersCell chatSendersCell = new ChatSendersCell(contentView.getContext(), currentAccount, chatInfo, res.peers, peer -> {
+                ChatSendersCell chatSendersCell = new ChatSendersCell(contentView.getContext(), currentAccount, chatInfo, res.peers, contentView.getHeight() - AndroidUtilities.dp(96), peer -> {
                     if (scrimPopupWindow != null) {
                         TLRPC.TL_messages_saveDefaultSendAs req1 = new TLRPC.TL_messages_saveDefaultSendAs();
                         req1.peer = getMessagesController().getInputPeer(dialog_id);
@@ -25213,7 +25213,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 scrimPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
                 scrimPopupWindow.setDismissAnimationDuration(220);
                 scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation);
-                scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(260), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
+                scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(260), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(416), View.MeasureSpec.AT_MOST));
                 scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
                 int popupX = 0;
                 if (AndroidUtilities.isTablet()) {
