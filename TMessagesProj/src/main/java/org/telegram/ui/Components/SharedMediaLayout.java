@@ -1119,6 +1119,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.messagePlayingDidStart);
         profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
+        profileActivity.getNotificationCenter().addObserver(this, NotificationCenter.updateInterfaces);
 
         for (int a = 0; a < 10; a++) {
             //cellCache.add(new SharedPhotoVideoCell(context));
@@ -1436,7 +1437,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             actionModeViews.add(forwardItem);
             forwardItem.setOnClickListener(v -> onActionBarItemClick(forward));
             hasRestrictionToSavingContent = chatInfo != null && parent.getMessagesController().getChat(chatInfo.id).noforwards;
-            updateForwardItemEnabled();
+            updateForwardItemEnabled(false);
         }
         deleteItem = new ActionBarMenuItem(context, null, Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
         deleteItem.setIcon(R.drawable.msg_delete);
@@ -2859,6 +2860,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.messagePlayingDidStart);
         profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
+        profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.updateInterfaces);
     }
 
     private void checkCurrentTabValid() {
@@ -3817,7 +3819,14 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         } else if (id == NotificationCenter.chatInfoDidLoad) {
             TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
             hasRestrictionToSavingContent = profileActivity.getMessagesController().getChat(chatFull.id).noforwards;
-            updateForwardItemEnabled();
+            updateForwardItemEnabled(false);
+        } else if (id == NotificationCenter.updateInterfaces) {
+            int updateMask = (Integer) args[0];
+            if ((updateMask & MessagesController.UPDATE_MASK_CHAT) != 0 && info != null) {
+                TLRPC.Chat chat = MessagesController.getInstance(account).getChat(info.id);
+                hasRestrictionToSavingContent = chat.noforwards;
+                updateForwardItemEnabled(true);
+            }
         }
     }
 
@@ -4005,9 +4014,13 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         this.hasRestrictionToSavingContent = hasRestrictionToSavingContent;
     }
 
-    public void updateForwardItemEnabled() {
+    public void updateForwardItemEnabled(boolean animate) {
         if (forwardItem != null) {
-            forwardItem.setAlpha(!hasRestrictionToSavingContent ? 1.0f : 0.5f);
+            if (animate) {
+                forwardItem.animate().alpha(!hasRestrictionToSavingContent ? 1.0f : 0.5f).start();
+            } else {
+                forwardItem.setAlpha(!hasRestrictionToSavingContent ? 1.0f : 0.5f);
+            }
         }
     }
 

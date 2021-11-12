@@ -6009,7 +6009,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             avatarImage.getImageReceiver().setVisible(!PhotoViewer.isShowingImage(photoBig), false);
             boolean hasRestrictionToSavingContent = currentChat != null && currentChat.noforwards;
             sharedMediaLayout.setHasRestrictionToSavingContent(hasRestrictionToSavingContent);
-            sharedMediaLayout.updateForwardItemEnabled();
+            sharedMediaLayout.updateForwardItemEnabled(false);
         }
     }
 
