@@ -3464,6 +3464,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
         if (show) {
             actionModeLayout.setVisibility(VISIBLE);
+        } else {
+            if (forwardRestrictedHintView != null) {
+                forwardRestrictedHintView.hide();
+            }
         }
         actionModeAnimation = new AnimatorSet();
         actionModeAnimation.playTogether(ObjectAnimator.ofFloat(actionModeLayout, View.ALPHA, show ? 1.0f : 0.0f));
@@ -4010,8 +4014,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     private void showForwardRestrictedHint() {
         if (forwardItem != null) {
             if (forwardRestrictedHintView == null) {
-                forwardRestrictedHintView = new HintView(profileActivity.getParentActivity(), 4, true, profileActivity.getResourceProvider());
-                addView(forwardRestrictedHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
+                forwardRestrictedHintView = new HintView(profileActivity.getParentActivity(), 4, profileActivity.getResourceProvider());
+                profileActivity.getParentLayout().addView(forwardRestrictedHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
                 if (ChatObject.isChannel(MessagesController.getInstance(profileActivity.getCurrentAccount()).getChat(info.id))) {
                     forwardRestrictedHintView.setText(LocaleController.getString("ForwardsFromChannelRestricted", R.string.ForwardsFromChannelRestricted));
                 } else {
