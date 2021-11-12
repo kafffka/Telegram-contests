@@ -12642,6 +12642,32 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         return false;
     }
 
+    private void updateForwardElements() {
+        ActionBarMenuItem forwardItem = actionBar.createActionMode().getItem(forward);
+        boolean isForwardButtonEnabled = currentChat != null || cantForwardMessagesCount == 0;
+        ArrayList<Animator> animators = new ArrayList<>();
+        if (forwardItem != null && forwardItem.getVisibility() == View.VISIBLE) {
+            forwardItem.setEnabled(isForwardButtonEnabled);
+            animators.add(ObjectAnimator.ofFloat(forwardItem, View.ALPHA, canForwardMessages() ? 1.0f : 0.5f));
+        }
+        if (forwardButton != null && forwardButton.getVisibility() == View.VISIBLE) {
+            forwardButton.setEnabled(isForwardButtonEnabled);
+            animators.add(ObjectAnimator.ofFloat(forwardButton, View.ALPHA, canForwardMessages() ? 1.0f : 0.5f));
+        }
+        if (animators.size() > 0) {
+            forwardButtonAnimation = new AnimatorSet();
+            forwardButtonAnimation.playTogether(animators);
+            forwardButtonAnimation.setDuration(100);
+            forwardButtonAnimation.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    forwardButtonAnimation = null;
+                }
+            });
+            forwardButtonAnimation.start();
+        }
+    }
+
     private void processRowSelect(View view, boolean outside, float touchX, float touchY) {
         MessageObject message = null;
         if (view instanceof ChatMessageCell) {
@@ -14190,6 +14216,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (ChatObject.isChannel(currentChat)) {
                     updateVisibleRows();
                 }
+                updateForwardElements();
             }
             if (avatarContainer != null && updateSubtitle) {
                 avatarContainer.updateSubtitle(true);
