@@ -589,6 +589,8 @@
     <string name="GroupSettingsTitle">Group Settings</string>
     <string name="ChannelSettingsTitle">Channel Settings</string>
     <string name="TypePrivate">Private</string>
+    <string name="TypePrivateRestricted">Private restricted</string>
+    <string name="TypePrivateRestrictedGroup">Private restricted</string>
     <string name="TypePublic">Public</string>
     <string name="TypePrivateGroup">Private</string>
     <string name="TypePublicGroup">Public</string>

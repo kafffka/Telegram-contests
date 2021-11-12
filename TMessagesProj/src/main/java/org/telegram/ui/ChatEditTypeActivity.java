@@ -514,7 +514,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
 
         boolean oldState = currentChat.noforwards;
         boolean newState = isPrivate && isNoForwards;
-        if (oldState == newState) {
+        if (!isPrivate || oldState == newState) {
             return true;
         }
 
