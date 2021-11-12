@@ -361,7 +361,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private HintView voiceHintTextView;
     private HintView noSoundHintView;
     private HintView forwardHintView;
-    private HintView forwardRestrictedHintView;
+    private HintView forwardRestrictedBottomHintView;
+    private HintView forwardRestrictedTopHintView;
     private ChecksHintView checksHintView;
     private View emojiButtonRed;
     private FrameLayout pinnedMessageView;
@@ -1915,7 +1916,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         mediaBanTooltip = null;
         noSoundHintView = null;
         forwardHintView = null;
-        forwardRestrictedHintView = null;
+        forwardRestrictedBottomHintView = null;
+        forwardRestrictedTopHintView = null;
         checksHintView = null;
         textSelectionHint = null;
         emojiButtonRed = null;
@@ -2005,7 +2007,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     createDeleteMessagesAlert(null, null);
                 } else if (id == forward) {
-                    openForward();
+                    if (hasRestrictionToSavingContent()) {
+                        showForwardRestrictedTopHint();
+                    } else {
+                        openForward();
+                    }
                 } else if (id == save_to) {
                     ArrayList<MessageObject> messageObjects = new ArrayList<>();
                     for (int a = 1; a >= 0; a--) {
@@ -7657,7 +7663,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         image = context.getResources().getDrawable(R.drawable.input_forward).mutate();
         image.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
         forwardButton.setCompoundDrawablesWithIntrinsicBounds(image, null, null, null);
-        forwardButton.setOnClickListener(v -> openForward());
+        forwardButton.setOnClickListener(v -> {
+            if (hasRestrictionToSavingContent()) {
+                showForwardRestrictedBottomHint();
+            } else {
+                openForward();
+            }
+        });
         bottomMessagesActionContainer.addView(forwardButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.TOP));
 
         contentView.addView(searchContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 51, Gravity.BOTTOM));
@@ -8699,37 +8711,33 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void openForward() {
-        if (hasRestrictionToSavingContent()) {
-            showForwardRestrictedHint();
-        } else {
-            int hasPoll = 0;
-            boolean hasInvoice = false;
-            for (int a = 0; a < 2; a++) {
-                for (int b = 0; b < selectedMessagesIds[a].size(); b++) {
-                    MessageObject messageObject = selectedMessagesIds[a].valueAt(b);
-                    if (messageObject.isPoll()) {
-                        hasPoll = messageObject.isPublicPoll() ? 2 : 1;
-                        if (hasPoll == 2) {
-                            break;
-                        }
-                    } else if (messageObject.isInvoice()) {
-                        hasInvoice = true;
+        int hasPoll = 0;
+        boolean hasInvoice = false;
+        for (int a = 0; a < 2; a++) {
+            for (int b = 0; b < selectedMessagesIds[a].size(); b++) {
+                MessageObject messageObject = selectedMessagesIds[a].valueAt(b);
+                if (messageObject.isPoll()) {
+                    hasPoll = messageObject.isPublicPoll() ? 2 : 1;
+                    if (hasPoll == 2) {
+                        break;
                     }
-                }
-                if (hasPoll == 2) {
-                    break;
+                } else if (messageObject.isInvoice()) {
+                    hasInvoice = true;
                 }
             }
-            Bundle args = new Bundle();
-            args.putBoolean("onlySelect", true);
-            args.putInt("dialogsType", 3);
-            args.putInt("messagesCount", canForwardMessagesCount);
-            args.putInt("hasPoll", hasPoll);
-            args.putBoolean("hasInvoice", hasInvoice);
-            DialogsActivity fragment = new DialogsActivity(args);
-            fragment.setDelegate(ChatActivity.this);
-            presentFragment(fragment);
+            if (hasPoll == 2) {
+                break;
+            }
         }
+        Bundle args = new Bundle();
+        args.putBoolean("onlySelect", true);
+        args.putInt("dialogsType", 3);
+        args.putInt("messagesCount", canForwardMessagesCount);
+        args.putInt("hasPoll", hasPoll);
+        args.putBoolean("hasInvoice", hasInvoice);
+        DialogsActivity fragment = new DialogsActivity(args);
+        fragment.setDelegate(ChatActivity.this);
+        presentFragment(fragment);
     }
 
     private void showBottomOverlayProgress(boolean show, boolean animated) {
@@ -9400,8 +9408,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (forwardHintView != null) {
             forwardHintView.hide();
         }
-        if (forwardRestrictedHintView != null) {
-            forwardRestrictedHintView.hide();
+        if (forwardRestrictedBottomHintView != null) {
+            forwardRestrictedBottomHintView.hide();
+        }
+        if (forwardRestrictedTopHintView != null) {
+            forwardRestrictedTopHintView.hide();
         }
         if (pollHintView != null) {
             pollHintView.hide();
@@ -9605,28 +9616,63 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         forwardHintView.showForMessageCell(cell, true);
     }
 
-    private void showForwardRestrictedHint() {
+    private void showForwardRestrictedBottomHint() {
         if (scrollingChatListView || chatListView == null || getParentActivity() == null || fragmentView == null) {
             return;
         }
 
-        if (forwardRestrictedHintView == null) {
+        if (forwardRestrictedTopHintView != null) {
+            forwardRestrictedTopHintView.hide();
+        }
+
+        if (forwardRestrictedBottomHintView == null) {
             SizeNotifierFrameLayout frameLayout = (SizeNotifierFrameLayout) fragmentView;
             int index = frameLayout.indexOfChild(chatActivityEnterView);
             if (index == -1) {
                 return;
             }
-            forwardRestrictedHintView = new HintView(getParentActivity(), 4, themeDelegate);
-            frameLayout.addView(forwardRestrictedHintView, index + 1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
+            forwardRestrictedBottomHintView = new HintView(getParentActivity(), 4, themeDelegate);
+            frameLayout.addView(forwardRestrictedBottomHintView, index + 1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
             if (ChatObject.isChannel(currentChat)) {
-                forwardRestrictedHintView.setText(LocaleController.getString("ForwardsFromChannelRestricted", R.string.ForwardsFromChannelRestricted));
+                forwardRestrictedBottomHintView.setText(LocaleController.getString("ForwardsFromChannelRestricted", R.string.ForwardsFromChannelRestricted));
             } else {
-                forwardRestrictedHintView.setText(LocaleController.getString("ForwardsFromGroupRestricted", R.string.ForwardsFromGroupRestricted));
+                forwardRestrictedBottomHintView.setText(LocaleController.getString("ForwardsFromGroupRestricted", R.string.ForwardsFromGroupRestricted));
             }
-            forwardRestrictedHintView.setAlpha(0.0f);
-            forwardRestrictedHintView.setVisibility(View.INVISIBLE);
+            forwardRestrictedBottomHintView.setAlpha(0.0f);
+            forwardRestrictedBottomHintView.setVisibility(View.INVISIBLE);
         }
-        forwardRestrictedHintView.showForView(forwardButton, true);
+        forwardRestrictedBottomHintView.showForView(forwardButton, true);
+    }
+
+
+    private void showForwardRestrictedTopHint() {
+        ActionBarMenuItem forwardItem = actionBar.createActionMode().getItem(forward);
+
+        if (scrollingChatListView || chatListView == null || getParentActivity() == null || fragmentView == null || forwardItem == null) {
+            return;
+        }
+
+        if (forwardRestrictedBottomHintView != null) {
+            forwardRestrictedBottomHintView.hide();
+        }
+
+        if (forwardRestrictedTopHintView == null) {
+            SizeNotifierFrameLayout frameLayout = (SizeNotifierFrameLayout) fragmentView;
+            int index = frameLayout.indexOfChild(chatActivityEnterView);
+            if (index == -1) {
+                return;
+            }
+            forwardRestrictedTopHintView = new HintView(getParentActivity(), 7, true, themeDelegate);
+            frameLayout.addView(forwardRestrictedTopHintView, index + 1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
+            if (ChatObject.isChannel(currentChat)) {
+                forwardRestrictedTopHintView.setText(LocaleController.getString("ForwardsFromChannelRestricted", R.string.ForwardsFromChannelRestricted));
+            } else {
+                forwardRestrictedTopHintView.setText(LocaleController.getString("ForwardsFromGroupRestricted", R.string.ForwardsFromGroupRestricted));
+            }
+            forwardRestrictedTopHintView.setAlpha(0.0f);
+            forwardRestrictedTopHintView.setVisibility(View.INVISIBLE);
+        }
+        forwardRestrictedTopHintView.showForView(forwardItem, true);
     }
 
     private void showTextSelectionHint(MessageObject messageObject) {
@@ -12396,13 +12442,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     forwardButtonAnimation = new AnimatorSet();
                     ArrayList<Animator> animators = new ArrayList<>();
                     if (forwardItem != null) {
-                        if (hasRestrictionToSavingContent()) {
-                            forwardItem.setVisibility(View.GONE);
-                        } else {
-                            forwardItem.setVisibility(View.VISIBLE);
-                            forwardItem.setEnabled(cantForwardMessagesCount == 0);
-                            animators.add(ObjectAnimator.ofFloat(forwardItem, View.ALPHA, cantForwardMessagesCount == 0 ? 1.0f : 0.5f));
-                        }
+                        forwardItem.setVisibility(View.VISIBLE);
+                        forwardItem.setEnabled(isForwardButtonEnabled);
+                        animators.add(ObjectAnimator.ofFloat(forwardItem, View.ALPHA, canForwardMessages() ? 1.0f : 0.5f));
                     }
                     if (forwardButton != null) {
                         forwardButton.setEnabled(isForwardButtonEnabled);
@@ -12419,13 +12461,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     forwardButtonAnimation.start();
                 } else {
                     if (forwardItem != null) {
-                        if (hasRestrictionToSavingContent()) {
-                            forwardItem.setVisibility(View.GONE);
-                        } else {
-                            forwardItem.setVisibility(View.VISIBLE);
-                            forwardItem.setEnabled(cantForwardMessagesCount == 0);
-                            forwardItem.setAlpha(cantForwardMessagesCount == 0 ? 1.0f : 0.5f);
-                        }
+                        forwardItem.setVisibility(View.VISIBLE);
+                        forwardItem.setEnabled(isForwardButtonEnabled);
+                        forwardItem.setAlpha(canForwardMessages() ? 1.0f : 0.5f);
                     }
                     if (forwardButton != null) {
                         forwardButton.setEnabled(isForwardButtonEnabled);
@@ -19408,6 +19446,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (textSelectionHint != null) {
             textSelectionHint.hide();
         }
+        if (forwardRestrictedBottomHintView != null) {
+            forwardRestrictedBottomHintView.hide();
+        }
+        if (forwardRestrictedTopHintView != null) {
+            forwardRestrictedTopHintView.hide();
+        }
         if (chatActivityEnterView != null) {
             chatActivityEnterView.preventInput = false;
         }
@@ -24923,8 +24967,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         themeDescriptions.add(new ThemeDescription(forwardHintView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{HintView.class}, new String[]{"textView"}, null, null, null, Theme.key_chat_gifSaveHintText));
         themeDescriptions.add(new ThemeDescription(forwardHintView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{HintView.class}, new String[]{"arrowImageView"}, null, null, null, Theme.key_chat_gifSaveHintBackground));
 
-        themeDescriptions.add(new ThemeDescription(forwardRestrictedHintView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{HintView.class}, new String[]{"textView"}, null, null, null, Theme.key_chat_gifSaveHintText));
-        themeDescriptions.add(new ThemeDescription(forwardRestrictedHintView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{HintView.class}, new String[]{"arrowImageView"}, null, null, null, Theme.key_chat_gifSaveHintBackground));
+        themeDescriptions.add(new ThemeDescription(forwardRestrictedBottomHintView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{HintView.class}, new String[]{"textView"}, null, null, null, Theme.key_chat_gifSaveHintText));
+        themeDescriptions.add(new ThemeDescription(forwardRestrictedBottomHintView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{HintView.class}, new String[]{"arrowImageView"}, null, null, null, Theme.key_chat_gifSaveHintBackground));
+
+        themeDescriptions.add(new ThemeDescription(forwardRestrictedTopHintView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{HintView.class}, new String[]{"textView"}, null, null, null, Theme.key_chat_gifSaveHintText));
+        themeDescriptions.add(new ThemeDescription(forwardRestrictedTopHintView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{HintView.class}, new String[]{"arrowImageView"}, null, null, null, Theme.key_chat_gifSaveHintBackground));
 
         themeDescriptions.add(new ThemeDescription(pagedownButtonCounter, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_chat_goDownButtonCounterBackground));
         themeDescriptions.add(new ThemeDescription(pagedownButtonCounter, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_goDownButtonCounter));
