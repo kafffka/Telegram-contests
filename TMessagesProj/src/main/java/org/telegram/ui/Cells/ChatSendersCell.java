@@ -37,17 +37,19 @@ public class ChatSendersCell extends FrameLayout {
     private RecyclerListView recyclerListView;
     private int currentAccount;
     private ChatSendersCellDelegate chatSendersCellDelegate;
+    private int availableHeight;
 
     public interface ChatSendersCellDelegate {
         void didSelectPeer(TLRPC.Peer peer);
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    public ChatSendersCell(@NonNull Context context, int currentAccount, TLRPC.ChatFull chatFull, ArrayList<TLRPC.Peer> peers, ChatSendersCellDelegate chatSendersCellDelegate) {
+    public ChatSendersCell(@NonNull Context context, int currentAccount, TLRPC.ChatFull chatFull, ArrayList<TLRPC.Peer> peers, int availableHeight, ChatSendersCellDelegate chatSendersCellDelegate) {
         super(context);
         this.currentAccount = currentAccount;
         this.peers = peers;
         this.chatSendersCellDelegate = chatSendersCellDelegate;
+        this.availableHeight = availableHeight;
 
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -94,7 +96,7 @@ public class ChatSendersCell extends FrameLayout {
 
             @Override
             public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-                GroupCreateUserCell peerCell = new GroupCreateUserCell(parent.getContext(), 2, 2, false);
+                GroupCreateUserCell peerCell = new GroupCreateUserCell(parent.getContext(), 2, 0, false, false, true);
                 peerCell.setLayoutParams(new RecyclerView.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                 return new RecyclerListView.Holder(peerCell);
             }
@@ -127,7 +129,7 @@ public class ChatSendersCell extends FrameLayout {
             }
 
         });
-        addView(recyclerListView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 48, 0, 0));
+        addView(recyclerListView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 40, 0, 0));
         Drawable shadowDrawable = ContextCompat.getDrawable(context, R.drawable.popup_fixed_alert).mutate();
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
         setBackground(shadowDrawable);
@@ -135,7 +137,7 @@ public class ChatSendersCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(260), MeasureSpec.EXACTLY), heightMeasureSpec);
+        super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(260), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(Math.min(availableHeight, AndroidUtilities.dp(416)), MeasureSpec.AT_MOST));
     }
 
 }

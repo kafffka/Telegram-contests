@@ -65,17 +65,23 @@ public class GroupCreateUserCell extends FrameLayout {
     private Paint paint;
 
     private boolean forceDarkTheme;
+    private boolean forSelectSender;
 
     private boolean showSelfAsSaved;
 
     public GroupCreateUserCell(Context context, int checkBoxType, int pad, boolean selfAsSaved) {
-        this(context, checkBoxType, pad, selfAsSaved, false);
+        this(context, checkBoxType, pad, selfAsSaved, false, false);
     }
 
     public GroupCreateUserCell(Context context, int checkBoxType, int pad, boolean selfAsSaved, boolean forCall) {
+        this(context, checkBoxType, pad, selfAsSaved, forCall, false);
+    }
+
+    public GroupCreateUserCell(Context context, int checkBoxType, int pad, boolean selfAsSaved, boolean forCall, boolean forSelectSender) {
         super(context);
         this.checkBoxType = checkBoxType;
         forceDarkTheme = forCall;
+        this.forSelectSender = forSelectSender;
 
         drawDivider = false;
         padding = pad;
@@ -83,20 +89,20 @@ public class GroupCreateUserCell extends FrameLayout {
         avatarDrawable = new AvatarDrawable();
 
         avatarImageView = new BackupImageView(context);
-        avatarImageView.setRoundRadius(AndroidUtilities.dp(24));
-        addView(avatarImageView, LayoutHelper.createFrame(46, 46, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : (13 + padding), 6, LocaleController.isRTL ? (13 + padding) : 0, 0));
+        avatarImageView.setRoundRadius(AndroidUtilities.dp(forSelectSender ? 20 : 24));
+        addView(avatarImageView, LayoutHelper.createFrame(forSelectSender ? 38 : 46, forSelectSender ? 38 : 46, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : (13 + padding), forSelectSender ? 9 : 6, LocaleController.isRTL ? (13 + padding) : 0, 0));
 
         nameTextView = new SimpleTextView(context);
         nameTextView.setTextColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_nameText : Theme.key_windowBackgroundWhiteBlackText));
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setTextSize(16);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 28 : 72) + padding, 10, (LocaleController.isRTL ? 72 : 28) + padding, 0));
+        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 28 : forSelectSender ? 64 : 72) + padding, forSelectSender ? 9 : 10, (LocaleController.isRTL ? forSelectSender ? 64 : 72 : 28) + padding, 0));
 
         statusTextView = new SimpleTextView(context);
         statusTextView.setTextSize(14);
         statusTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 28 : 72) + padding, 32, (LocaleController.isRTL ? 72 : 28) + padding, 0));
+        addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 28 : forSelectSender ? 64 : 72) + padding, forSelectSender ? 31 : 32, (LocaleController.isRTL ? forSelectSender ? 64 : 72 : 28) + padding, 0));
 
         if (checkBoxType == 1) {
             checkBox = new CheckBox2(context, 21);
@@ -189,7 +195,11 @@ public class GroupCreateUserCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(currentObject instanceof String ? 50 : 58), MeasureSpec.EXACTLY));
+        if (forSelectSender) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY));
+        } else {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(currentObject instanceof String ? 50 : 58), MeasureSpec.EXACTLY));
+        }
     }
 
     public void recycle() {
@@ -250,9 +260,9 @@ public class GroupCreateUserCell extends FrameLayout {
             if (currentStatus != null && TextUtils.isEmpty(currentStatus)) {
                 ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(19);
             } else {
-                ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(10);
+                ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(forSelectSender ? 9 : 10);
             }
-            avatarImageView.getLayoutParams().width = avatarImageView.getLayoutParams().height = AndroidUtilities.dp(46);
+            avatarImageView.getLayoutParams().width = avatarImageView.getLayoutParams().height = AndroidUtilities.dp(forSelectSender ? 38 : 46);
             if (checkBox != null) {
                 ((LayoutParams) checkBox.getLayoutParams()).topMargin = AndroidUtilities.dp(33);
                 if (LocaleController.isRTL) {
@@ -408,7 +418,7 @@ public class GroupCreateUserCell extends FrameLayout {
             paint.setColor(Theme.getColor(Theme.key_checkboxSquareBackground));
             float cx = avatarImageView.getLeft() + avatarImageView.getMeasuredWidth() / 2;
             float cy = avatarImageView.getTop() + avatarImageView.getMeasuredHeight() / 2;
-            canvas.drawCircle(cx, cy, AndroidUtilities.dp(18) + AndroidUtilities.dp(4) * checkProgress, paint);
+            canvas.drawCircle(cx, cy, AndroidUtilities.dp(forSelectSender ? 15 : 18) + AndroidUtilities.dp(4) * checkProgress, paint);
         }
         if (drawDivider) {
             int start = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 72 + padding);
