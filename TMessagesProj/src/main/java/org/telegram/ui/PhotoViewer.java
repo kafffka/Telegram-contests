@@ -10277,8 +10277,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     boolean canPaint = newMessageObject.getDocument() == null || newMessageObject.canPreviewDocument() || newMessageObject.getMimeType().startsWith("video/");
                     paintButton.setVisibility(canPaint && canSendMediaToParentChatActivity() ? View.VISIBLE : View.GONE);
                     if (hasRestrictionToSavingContent()) {
-                        bottomButtonsLayout.setVisibility(View.GONE);
+                        if (paintButton.getVisibility() == View.GONE) {
+                            bottomButtonsLayout.setVisibility(View.GONE);
+                        } else {
+                            shareButton.setVisibility(View.GONE);
+                            bottomButtonsLayout.setVisibility(!videoPlayerControlVisible  ? View.VISIBLE : View.GONE);
+                        }
                     } else {
+                        shareButton.setVisibility(View.VISIBLE);
                         bottomButtonsLayout.setVisibility(!videoPlayerControlVisible  ? View.VISIBLE : View.GONE);
                     }
                     if (bottomButtonsLayout.getVisibility() == View.VISIBLE || hasRestrictionToSavingContent()) {
