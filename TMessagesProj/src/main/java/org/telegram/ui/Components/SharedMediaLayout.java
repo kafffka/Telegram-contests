@@ -1437,6 +1437,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             actionModeViews.add(forwardItem);
             forwardItem.setOnClickListener(v -> onActionBarItemClick(forward));
             hasRestrictionToSavingContent = chatInfo != null && parent.getMessagesController().getChat(chatInfo.id).noforwards;
+            if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
+                PhotoViewer.getInstance().setParentHasRestrictionToSavingContent(hasRestrictionToSavingContent);
+            }
             updateForwardItemEnabled(false);
         }
         deleteItem = new ActionBarMenuItem(context, null, Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);

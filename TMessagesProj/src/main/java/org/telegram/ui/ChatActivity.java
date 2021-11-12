@@ -14216,6 +14216,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (ChatObject.isChannel(currentChat)) {
                     updateVisibleRows();
                 }
+                if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
+                    PhotoViewer.getInstance().setParentHasRestrictionToSavingContent(chat.noforwards);
+                }
                 updateForwardElements();
             }
             if (avatarContainer != null && updateSubtitle) {
