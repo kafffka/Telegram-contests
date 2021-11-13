@@ -25224,31 +25224,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         ArrayList<TLRPC.Peer> peers = getMessagesController().getSendAsPeers(dialog_id);
         if (peers != null && peers.size() > 1) {
             ChatSendersCell chatSendersCell = new ChatSendersCell(contentView.getContext(), currentAccount, chatInfo, peers, contentView.getHeight() - AndroidUtilities.dp(96), peer -> {
-                TLRPC.TL_messages_saveDefaultSendAs req1 = new TLRPC.TL_messages_saveDefaultSendAs();
-                req1.peer = getMessagesController().getInputPeer(dialog_id);
-                if (peer instanceof TLRPC.TL_peerChat) {
-                    TLRPC.TL_peerChat peerChat = (TLRPC.TL_peerChat) peer;
-                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(peerChat.chat_id);
-                    req1.send_as = MessagesController.getInputPeer(chat);
-                } else if (peer instanceof TLRPC.TL_peerChannel) {
-                    TLRPC.TL_peerChannel peerChannel = (TLRPC.TL_peerChannel) peer;
-                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(peerChannel.channel_id);
-                    req1.send_as = MessagesController.getInputPeer(chat);
-                } else if (peer instanceof TLRPC.TL_peerUser) {
-                    TLRPC.TL_peerUser peerUser = (TLRPC.TL_peerUser) peer;
-                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerUser.user_id);
-                    req1.send_as = MessagesController.getInputPeer(user);
+                chatActivityEnterView.selectSenderView.setPeer(peer);
+                getMessagesController().updateChatSendAs(dialog_id, peer, chatInfo);
+                if (scrimPopupWindow != null) {
+                    scrimPopupWindow.dismiss(true);
                 }
-                ConnectionsManager.getInstance(currentAccount).sendRequest(req1, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
-                    if (response1 != null) {
-                        chatInfo.default_send_as = peer;
-                        MessagesController.getInstance(currentAccount).putChatFull(chatInfo);
-                        chatActivityEnterView.selectSenderView.setPeer(peer);
-                    }
-                    if (scrimPopupWindow != null) {
-                        scrimPopupWindow.dismiss(true);
-                    }
-                }));
             });
 
             FrameLayout scrimPopupContainerLayout = new FrameLayout(contentView.getContext()) {

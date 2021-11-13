@@ -9168,6 +9168,31 @@ public class MessagesController extends BaseController implements NotificationCe
         }, ConnectionsManager.RequestFlagInvokeAfter);
     }
 
+    public void updateChatSendAs(long chatId, TLRPC.Peer peer, TLRPC.ChatFull info) {
+        TLRPC.TL_messages_saveDefaultSendAs req = new TLRPC.TL_messages_saveDefaultSendAs();
+        req.peer = getMessagesController().getInputPeer(chatId);
+        if (peer instanceof TLRPC.TL_peerChat) {
+            TLRPC.TL_peerChat peerChat = (TLRPC.TL_peerChat) peer;
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(peerChat.chat_id);
+            req.send_as = MessagesController.getInputPeer(chat);
+        } else if (peer instanceof TLRPC.TL_peerChannel) {
+            TLRPC.TL_peerChannel peerChannel = (TLRPC.TL_peerChannel) peer;
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(peerChannel.channel_id);
+            req.send_as = MessagesController.getInputPeer(chat);
+        } else if (peer instanceof TLRPC.TL_peerUser) {
+            TLRPC.TL_peerUser peerUser = (TLRPC.TL_peerUser) peer;
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerUser.user_id);
+            req.send_as = MessagesController.getInputPeer(user);
+        }
+        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (response != null) {
+                info.default_send_as = peer;
+                getMessagesStorage().updateChatInfo(info, false);
+                getNotificationCenter().postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, false, false);
+            }
+        }), ConnectionsManager.RequestFlagInvokeAfter);
+    }
+
     public void updateChannelUserName(long chatId, String userName) {
         TLRPC.TL_channels_updateUsername req = new TLRPC.TL_channels_updateUsername();
         req.channel = getInputChannel(chatId);
