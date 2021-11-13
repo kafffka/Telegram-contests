@@ -25290,12 +25290,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 scrimPopupWindow.setOutsideTouchable(true);
                 scrimPopupWindow.setClippingEnabled(true);
                 scrimPopupWindow.setFocusable(true);
+                scrimPopupWindow.setAnimationEnabled(false);
+                scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation2);
                 scrimPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
                 scrimPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
-                scrimPopupWindow.setDismissAnimationDuration(220);
-                scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation);
-                scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(260), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(416), View.MeasureSpec.AT_MOST));
                 scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
+                scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(260), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(416), View.MeasureSpec.AT_MOST));
                 int popupX = 0;
                 if (AndroidUtilities.isTablet()) {
                     int[] location = new int[2];
