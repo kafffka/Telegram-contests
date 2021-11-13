@@ -2584,7 +2584,9 @@ public class MessagesController extends BaseController implements NotificationCe
         dialogMessagesByIds.clear();
         dialogMessagesByRandomIds.clear();
         channelAdmins.clear();
+        sendAsPeersByChat.clear();
         loadingChannelAdmins.clear();
+        loadingSendAsPeers.clear();
         users.clear();
         objectsByUsernames.clear();
         chats.clear();
