@@ -2419,7 +2419,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 } else {
                     selectSenderView.cancelCloseAnimation();
                     selectSenderView.startCloseAnimation();
-                    parentFragment.showSelectSenderPopup();
+                    parentFragment.showSelectSenderPopup(true);
                 }
             });
             frameLayout.addView(selectSenderView, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT, 10, 0, 0, 10));

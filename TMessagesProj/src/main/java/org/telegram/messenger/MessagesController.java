@@ -169,7 +169,9 @@ public class MessagesController extends BaseController implements NotificationCe
     private ArrayList<Long> loadedFullParticipants = new ArrayList<>();
     private ArrayList<Long> loadedFullChats = new ArrayList<>();
     private LongSparseArray<LongSparseArray<TLRPC.ChannelParticipant>> channelAdmins = new LongSparseArray<>();
+    private LongSparseArray<ArrayList<TLRPC.Peer>> sendAsPeersByChat = new LongSparseArray<>();
     private LongSparseIntArray loadingChannelAdmins = new LongSparseIntArray();
+    private LongSparseIntArray loadingSendAsPeers = new LongSparseIntArray();
 
     private SparseIntArray migratedChats = new SparseIntArray();
 
@@ -3106,6 +3108,29 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public TLRPC.ChatFull getChatFull(long chatId) {
         return fullChats.get(chatId);
+    }
+
+    public ArrayList<TLRPC.Peer> getSendAsPeers(long chatId) {
+        return sendAsPeersByChat.get(chatId);
+    }
+
+    public void loadSendAsPeers(long chatId, Runnable onLoad) {
+        int loadTime = loadingSendAsPeers.get(chatId);
+        if (chatId == 0 || (int) (System.currentTimeMillis() / 1000) - loadTime < 60) {
+            return;
+        }
+        TLRPC.TL_channels_getSendAs req = new TLRPC.TL_channels_getSendAs();
+        req.peer = getMessagesController().getInputPeer(chatId);
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (error == null) {
+                TLRPC.TL_channels_sendAsPeers res = (TLRPC.TL_channels_sendAsPeers) response;
+                sendAsPeersByChat.put(chatId, res.peers);
+                loadingSendAsPeers.put(chatId, (int) (System.currentTimeMillis() / 1000));
+                if (onLoad != null) {
+                    onLoad.run();
+                }
+            }
+        }));
     }
 
     public void putGroupCall(long chatId, ChatObject.Call call) {
