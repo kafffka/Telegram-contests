@@ -3920,7 +3920,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                 SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, false, false, true, 0);
                             }
                             fragment1.finishFragment();
-                            if (parentChatActivityFinal != null) {
+                            if (parentChatActivityFinal != null && !parentChatActivityFinal.hasRestrictionToSavingContent()) {
                                 if (dids.size() == 1) {
                                     parentChatActivityFinal.getUndoView().showWithAction(dids.get(0), UndoView.ACTION_FWD_MESSAGES, fmessages.size());
                                 } else {

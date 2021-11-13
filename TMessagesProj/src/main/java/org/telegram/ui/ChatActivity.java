@@ -21400,10 +21400,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 getSendMessagesHelper().sendMessage(fmessages, did, false, false,true, 0);
             }
             fragment.finishFragment();
-            if (dids.size() == 1) {
-                undoView.showWithAction(dids.get(0), UndoView.ACTION_FWD_MESSAGES, fmessages.size());
-            } else {
-                undoView.showWithAction(0, UndoView.ACTION_FWD_MESSAGES, fmessages.size(), dids.size(), null, null);
+            if (!hasRestrictionToSavingContent()) {
+                if (dids.size() == 1) {
+                    undoView.showWithAction(dids.get(0), UndoView.ACTION_FWD_MESSAGES, fmessages.size());
+                } else {
+                    undoView.showWithAction(0, UndoView.ACTION_FWD_MESSAGES, fmessages.size(), dids.size(), null, null);
+                }
             }
         } else {
             long did = dids.get(0);
@@ -22845,10 +22847,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                                 @Override
                                 protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count) {
-                                    if (dids.size() == 1) {
-                                        undoView.showWithAction(dids.valueAt(0).id, UndoView.ACTION_FWD_MESSAGES, count);
-                                    } else {
-                                        undoView.showWithAction(0, UndoView.ACTION_FWD_MESSAGES, count, dids.size(), null, null);
+                                    if (!hasRestrictionToSavingContent()) {
+                                        if (dids.size() == 1) {
+                                            undoView.showWithAction(dids.valueAt(0).id, UndoView.ACTION_FWD_MESSAGES, count);
+                                        } else {
+                                            undoView.showWithAction(0, UndoView.ACTION_FWD_MESSAGES, count, dids.size(), null, null);
+                                        }
                                     }
                                 }
                             });
