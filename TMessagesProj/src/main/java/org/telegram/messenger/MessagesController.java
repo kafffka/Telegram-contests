@@ -169,9 +169,9 @@ public class MessagesController extends BaseController implements NotificationCe
     private ArrayList<Long> loadedFullParticipants = new ArrayList<>();
     private ArrayList<Long> loadedFullChats = new ArrayList<>();
     private LongSparseArray<LongSparseArray<TLRPC.ChannelParticipant>> channelAdmins = new LongSparseArray<>();
-    private LongSparseArray<ArrayList<TLRPC.Peer>> sendAsPeersByChat = new LongSparseArray<>();
+    public LongSparseArray<ArrayList<TLRPC.Peer>> sendAsPeersByChat = new LongSparseArray<>();
     private LongSparseIntArray loadingChannelAdmins = new LongSparseIntArray();
-    private LongSparseIntArray loadingSendAsPeers = new LongSparseIntArray();
+    public LongSparseIntArray loadingSendAsPeers = new LongSparseIntArray();
 
     private SparseIntArray migratedChats = new SparseIntArray();
 

@@ -5584,6 +5584,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     } else {
                         AlertsCreator.processError(currentAccount, error, null, req);
                         if (error.text.equals("SEND_AS_PEER_INVALID")) {
+                            getMessagesController().sendAsPeersByChat.remove(-newMsgObj.dialog_id);
+                            getMessagesController().loadingSendAsPeers.put(-newMsgObj.dialog_id, 0);
                             getMessagesController().loadFullChat(-newMsgObj.dialog_id, 0, true);
                         }
                         isSentError = true;
