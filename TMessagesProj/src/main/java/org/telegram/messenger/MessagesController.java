@@ -3118,7 +3118,7 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public void loadSendAsPeers(long chatId, Runnable onLoad) {
         int loadTime = loadingSendAsPeers.get(chatId);
-        if (chatId == 0 || (int) (System.currentTimeMillis() / 1000) - loadTime < 60) {
+        if (chatId == 0 || (int) (System.currentTimeMillis() / 1000) - loadTime < 5) {
             return;
         }
         TLRPC.TL_channels_getSendAs req = new TLRPC.TL_channels_getSendAs();
