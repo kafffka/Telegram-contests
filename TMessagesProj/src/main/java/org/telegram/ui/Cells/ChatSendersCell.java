@@ -12,6 +12,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -38,6 +39,10 @@ public class ChatSendersCell extends FrameLayout {
     private int currentAccount;
     private ChatSendersCellDelegate chatSendersCellDelegate;
     private int availableHeight;
+    private Drawable shadowDrawable;
+    private ImageView shadowView;
+
+
 
     public interface ChatSendersCellDelegate {
         void didSelectPeer(TLRPC.Peer peer);
@@ -58,7 +63,13 @@ public class ChatSendersCell extends FrameLayout {
         titleView.setEllipsize(TextUtils.TruncateAt.END);
         titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue));
         titleView.setText(LocaleController.getString("SendMessageAs", R.string.SendMessageAs));
-        addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 16, 16, 16, 16));
+        addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 16, 12, 16, 16));
+
+        shadowView = new ImageView(context);
+        shadowView.setScaleType(ImageView.ScaleType.FIT_XY);
+        shadowView.setImageResource(R.drawable.header_shadow);
+        shadowView.setAlpha(0f);
+        addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 6, Gravity.TOP, 0, 40, 0,0));
 
         recyclerListView = new RecyclerListView(getContext());
         recyclerListView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -128,6 +139,27 @@ public class ChatSendersCell extends FrameLayout {
                 return peers.size();
             }
 
+        });
+        recyclerListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+            }
+
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                int offset = recyclerView.computeVerticalScrollOffset();
+                float alpha;
+                if (offset == 0) {
+                    alpha = 0;
+                } else if (offset > 100) {
+                    alpha = 1;
+                } else {
+                    alpha = offset / 100f;
+                }
+                shadowView.setAlpha(alpha);
+            }
         });
         addView(recyclerListView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 40, 0, 0));
         Drawable shadowDrawable = ContextCompat.getDrawable(context, R.drawable.popup_fixed_alert).mutate();
