@@ -9187,6 +9187,7 @@ public class MessagesController extends BaseController implements NotificationCe
         getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (response != null) {
                 info.default_send_as = peer;
+                putChatFull(info);
                 getMessagesStorage().updateChatInfo(info, false);
                 getNotificationCenter().postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, false, false);
             }
