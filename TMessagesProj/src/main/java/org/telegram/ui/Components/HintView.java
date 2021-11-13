@@ -433,6 +433,10 @@ public class HintView extends FrameLayout {
     }
 
     public void hide() {
+        hide(true);
+    }
+
+    public void hide(boolean animate) {
         if (getTag() == null) {
             return;
         }
@@ -445,21 +449,27 @@ public class HintView extends FrameLayout {
             animatorSet.cancel();
             animatorSet = null;
         }
-        animatorSet = new AnimatorSet();
-        animatorSet.playTogether(
-                ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f)
-        );
-        animatorSet.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                setVisibility(View.INVISIBLE);
-                currentView = null;
-                messageCell = null;
-                animatorSet = null;
-            }
-        });
-        animatorSet.setDuration(300);
-        animatorSet.start();
+        if (animate) {
+            animatorSet = new AnimatorSet();
+            animatorSet.playTogether(
+                    ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f)
+            );
+            animatorSet.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    setVisibility(View.INVISIBLE);
+                    currentView = null;
+                    messageCell = null;
+                    animatorSet = null;
+                }
+            });
+            animatorSet.setDuration(300);
+            animatorSet.start();
+        } else {
+            setVisibility(View.INVISIBLE);
+            currentView = null;
+            messageCell = null;
+        }
     }
 
     public void setText(CharSequence text) {

@@ -2866,6 +2866,16 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         profileActivity.getNotificationCenter().removeObserver(this, NotificationCenter.updateInterfaces);
     }
 
+    public void prepareFragmentToSlide(boolean topFragment, boolean beginSlide) {
+        hideForwardRestrictedHint(false);
+    }
+
+    private void hideForwardRestrictedHint(boolean animate) {
+        if (forwardRestrictedHintView != null && forwardRestrictedHintView.getVisibility() == View.VISIBLE) {
+            forwardRestrictedHintView.hide(animate);
+        }
+    }
+
     private void checkCurrentTabValid() {
         int id = scrollSlidingTextTabStrip.getCurrentTabId();
         if (!scrollSlidingTextTabStrip.hasTab(id)) {
@@ -3455,6 +3465,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             mediaPages[a].emptyView.setTranslationY(t);
             mediaPages[a].progressView.setTranslationY(-t);
         }
+
+        hideForwardRestrictedHint(false);
     }
 
     private AnimatorSet actionModeAnimation;
@@ -3984,6 +3996,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
     }
 
+    public void onPause() {
+        hideForwardRestrictedHint(false);
+    }
+    
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         for (int a = 0; a < mediaPages.length; a++) {
@@ -6330,6 +6346,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (forwardItem != null) {
             arrayList.add(new ThemeDescription(forwardItem.getIconView(), ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
             arrayList.add(new ThemeDescription(forwardItem, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_actionBarActionModeDefaultSelector));
+
+            arrayList.add(new ThemeDescription(forwardRestrictedHintView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{HintView.class}, new String[]{"textView"}, null, null, null, Theme.key_chat_gifSaveHintText));
+            arrayList.add(new ThemeDescription(forwardRestrictedHintView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{HintView.class}, new String[]{"arrowImageView"}, null, null, null, Theme.key_chat_gifSaveHintBackground));
+
         }
         arrayList.add(new ThemeDescription(closeButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, new Drawable[]{backDrawable}, null, Theme.key_windowBackgroundWhiteGrayText2));
         arrayList.add(new ThemeDescription(closeButton, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_actionBarActionModeDefaultSelector));

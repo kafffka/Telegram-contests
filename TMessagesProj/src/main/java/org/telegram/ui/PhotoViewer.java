@@ -11732,8 +11732,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     public void setParentHasRestrictionToSavingContent(boolean parentHasRestrictionToSavingContent) {
         if (this.parentHasRestrictionToSavingContent != parentHasRestrictionToSavingContent) {
             this.parentHasRestrictionToSavingContent = parentHasRestrictionToSavingContent;
-            ArrayList<MessageObject> localImagesArr = new ArrayList<>(imagesArr);
-            onPhotoShow(currentMessageObject, null, null, null, localImagesArr, null, null, currentIndex, placeProvider.getPlaceForPhoto(currentMessageObject, getFileLocation(currentFileLocation), currentIndex, false));
+            if (placeProvider != null && imagesArr != null) {
+                ArrayList<MessageObject> localImagesArr = new ArrayList<>(imagesArr);
+                onPhotoShow(currentMessageObject, null, null, null, localImagesArr, null, null, currentIndex, placeProvider.getPlaceForPhoto(currentMessageObject, getFileLocation(currentFileLocation), currentIndex, false));
+            }
         }
     }
 

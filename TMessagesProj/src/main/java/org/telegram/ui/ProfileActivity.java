@@ -1427,6 +1427,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     @Override
+    protected void prepareFragmentToSlide(boolean topFragment, boolean beginSlide) {
+        super.prepareFragmentToSlide(topFragment, beginSlide);
+        if (sharedMediaLayout != null) {
+            sharedMediaLayout.prepareFragmentToSlide(topFragment, beginSlide);
+        }
+    }
+
+    @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         if (sharedMediaLayout != null) {
@@ -4878,6 +4886,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         if (imageUpdater != null) {
             imageUpdater.onPause();
+        }
+        if (sharedMediaLayout != null) {
+            sharedMediaLayout.onPause();
         }
     }
 
