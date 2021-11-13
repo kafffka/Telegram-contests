@@ -25297,7 +25297,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             scrimPopupWindow.setClippingEnabled(true);
             scrimPopupWindow.setFocusable(true);
             scrimPopupWindow.setAnimationEnabled(false);
-            scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation2);
+            scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation3);
             scrimPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
             scrimPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
             scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
