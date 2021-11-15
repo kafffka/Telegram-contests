@@ -1877,7 +1877,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 TLRPC.InputPeer sendAs = null;
                 if (chat != null) {
                     TLRPC.ChatFull chatFull = getMessagesController().getChatFull(chat.id);
-                    if (chatFull.default_send_as != null) {
+                    if (chatFull != null && chatFull.default_send_as != null) {
                         sendAs = getMessagesController().getInputPeer(chatFull.default_send_as);
                     }
                 }

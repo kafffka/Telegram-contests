@@ -23,6 +23,7 @@ public class UserConfig extends BaseController {
 
     public static int selectedAccount;
     public final static int MAX_ACCOUNT_COUNT = 3;
+    public final static int MAX_CHAT_SENDERS = 10;
 
     private final Object sync = new Object();
     private boolean configLoaded;

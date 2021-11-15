@@ -94,13 +94,15 @@ public class GroupCreateUserCell extends FrameLayout {
 
         nameTextView = new SimpleTextView(context);
         nameTextView.setTextColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_nameText : Theme.key_windowBackgroundWhiteBlackText));
-        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        if (!forSelectSender) {
+            nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        }
         nameTextView.setTextSize(16);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 28 : forSelectSender ? 64 : 72) + padding, forSelectSender ? 9 : 10, (LocaleController.isRTL ? forSelectSender ? 64 : 72 : 28) + padding, 0));
 
         statusTextView = new SimpleTextView(context);
-        statusTextView.setTextSize(14);
+        statusTextView.setTextSize(forSelectSender ? 13 : 14);
         statusTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 28 : forSelectSender ? 64 : 72) + padding, forSelectSender ? 31 : 32, (LocaleController.isRTL ? forSelectSender ? 64 : 72 : 28) + padding, 0));
 
@@ -163,8 +165,13 @@ public class GroupCreateUserCell extends FrameLayout {
                 animator.setInterpolator(CubicBezierInterpolator.EASE_OUT);
                 animator.start();
             } else {
-                avatarImageView.setScaleX(isChecked ? 0.82f : 1.0f);
-                avatarImageView.setScaleY(isChecked ? 0.82f : 1.0f);
+                if (forSelectSender) {
+                    avatarImageView.setScaleX(isChecked ? 0.85f : 1.0f);
+                    avatarImageView.setScaleY(isChecked ? 0.85f : 1.0f);
+                } else {
+                    avatarImageView.setScaleX(isChecked ? 0.82f : 1.0f);
+                    avatarImageView.setScaleY(isChecked ? 0.82f : 1.0f);
+                }
                 checkProgress = isChecked ? 1.0f : 0.0f;
             }
             invalidate();

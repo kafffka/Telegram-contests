@@ -4,12 +4,10 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -29,31 +27,22 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class ChatSendersCell extends FrameLayout {
 
-    private ArrayList<TLRPC.Peer> peers;
     private TextView titleView;
     private RecyclerListView recyclerListView;
-    private int currentAccount;
-    private ChatSendersCellDelegate chatSendersCellDelegate;
     private int availableHeight;
-    private Drawable shadowDrawable;
     private ImageView shadowView;
-
-
 
     public interface ChatSendersCellDelegate {
         void didSelectPeer(TLRPC.Peer peer);
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    public ChatSendersCell(@NonNull Context context, int currentAccount, TLRPC.ChatFull chatFull, ArrayList<TLRPC.Peer> peers, int availableHeight, ChatSendersCellDelegate chatSendersCellDelegate) {
+    public ChatSendersCell(@NonNull Context context, int currentAccount, TLRPC.ChatFull chatFull, List<TLRPC.Peer> peers, int availableHeight, ChatSendersCellDelegate chatSendersCellDelegate) {
         super(context);
-        this.currentAccount = currentAccount;
-        this.peers = peers;
-        this.chatSendersCellDelegate = chatSendersCellDelegate;
         this.availableHeight = availableHeight;
 
         titleView = new TextView(context);
@@ -73,30 +62,10 @@ public class ChatSendersCell extends FrameLayout {
 
         recyclerListView = new RecyclerListView(getContext());
         recyclerListView.setLayoutManager(new LinearLayoutManager(getContext()));
-        recyclerListView.addItemDecoration(new RecyclerView.ItemDecoration() {
-            @Override
-            public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-                int p = parent.getChildAdapterPosition(view);
-                if (p == peers.size() - 1) {
-                    outRect.bottom = AndroidUtilities.dp(4);
-                }
-            }
-        });
         recyclerListView.setOnItemClickListener((view, position) -> {
             if (view instanceof GroupCreateUserCell) {
-//                ((GroupCreateUserCell) view).setChecked(true, true);
                 chatSendersCellDelegate.didSelectPeer(peers.get(position));
             }
-//            for (int a = 0, N = recyclerListView.getChildCount(); a < N; a++) {
-//                View child = recyclerListView.getChildAt(a);
-//                if (child != view) {
-//                    if (view instanceof GroupCreateUserCell) {
-//                        ((GroupCreateUserCell) child).setChecked(false, true);
-//                    } else if (view instanceof ShareDialogCell) {
-//                        ((ShareDialogCell) child).setChecked(false, true);
-//                    }
-//                }
-//            }
         });
         recyclerListView.setAdapter(new RecyclerListView.SelectionAdapter() {
 

@@ -3817,7 +3817,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private boolean isChangePeerAvailable() {
         if (info != null) {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(info.id);
-            return ((chat.megagroup && chat.username != null) || chat.has_geo || (chat.megagroup && chat.has_link)) && info.default_send_as != null;
+            return (chat.megagroup && (chat.username != null || chat.has_geo || chat.has_link)) && info.default_send_as != null;
         } else {
             return false;
         }

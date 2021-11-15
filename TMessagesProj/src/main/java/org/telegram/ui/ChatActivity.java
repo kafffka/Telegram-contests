@@ -25221,8 +25221,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     public void showSelectSenderPopup(boolean tryReload) {
-        ArrayList<TLRPC.Peer> peers = getMessagesController().getSendAsPeers(dialog_id);
+        List<TLRPC.Peer> peers = getMessagesController().getSendAsPeers(dialog_id);
         if (peers != null && peers.size() > 1) {
+            if (peers.size() > UserConfig.MAX_CHAT_SENDERS) {
+                peers = peers.subList(0, UserConfig.MAX_CHAT_SENDERS);
+            }
             ChatSendersCell chatSendersCell = new ChatSendersCell(contentView.getContext(), currentAccount, chatInfo, peers, contentView.getHeight() - AndroidUtilities.dp(96), peer -> {
                 chatActivityEnterView.selectSenderView.setPeer(peer);
                 getMessagesController().updateChatSendAs(dialog_id, peer, chatInfo);
