@@ -25223,100 +25223,102 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     public void showSelectSenderPopup(boolean tryReload) {
         List<TLRPC.Peer> peers = getMessagesController().getSendAsPeers(dialog_id);
         ArrayList<TLRPC.Peer> senders = new ArrayList<>(UserConfig.MAX_CHAT_SENDERS);
-        for (int i = 0; i < peers.size(); i++) {
-            TLRPC.Peer peer = peers.get(i);
-            if (peer instanceof TLRPC.TL_peerChat) {
-                TLRPC.TL_peerChat peerChat = (TLRPC.TL_peerChat) peer;
-                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(peerChat.chat_id);
-                if (chat != null) {
-                    senders.add(peerChat);
-                }
-            } else if (peer instanceof TLRPC.TL_peerChannel) {
-                TLRPC.TL_peerChannel peerChannel = (TLRPC.TL_peerChannel) peer;
-                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(peerChannel.channel_id);
-                if (chat != null) {
-                    senders.add(peerChannel);
-                }
-            } else if (peer instanceof TLRPC.TL_peerUser) {
-                TLRPC.TL_peerUser peerUser = (TLRPC.TL_peerUser) peer;
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerUser.user_id);
-                if (user != null) {
-                    senders.add(peerUser);
-                }
-            }
-        }
-        if (peers != null && senders.size() > 1) {
-            if (senders.size() > UserConfig.MAX_CHAT_SENDERS) {
-                senders = (ArrayList<TLRPC.Peer>) senders.subList(0, UserConfig.MAX_CHAT_SENDERS);
-            }
-            ChatSendersCell chatSendersCell = new ChatSendersCell(contentView.getContext(), currentAccount, chatInfo, senders, contentView.getHeight() - AndroidUtilities.dp(96), peer -> {
-                chatActivityEnterView.selectSenderView.setPeer(peer);
-                getMessagesController().updateChatSendAs(dialog_id, peer, chatInfo);
-                if (scrimPopupWindow != null) {
-                    scrimPopupWindow.dismiss(true);
-                }
-            });
-
-            FrameLayout scrimPopupContainerLayout = new FrameLayout(contentView.getContext()) {
-                @Override
-                public boolean dispatchKeyEvent(KeyEvent event) {
-                    if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0 && scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
-                        scrimPopupWindow.dismiss();
+        if (peers != null && peers.size() > 0) {
+            for (int i = 0; i < peers.size(); i++) {
+                TLRPC.Peer peer = peers.get(i);
+                if (peer instanceof TLRPC.TL_peerChat) {
+                    TLRPC.TL_peerChat peerChat = (TLRPC.TL_peerChat) peer;
+                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(peerChat.chat_id);
+                    if (chat != null) {
+                        senders.add(peerChat);
                     }
-                    return super.dispatchKeyEvent(event);
+                } else if (peer instanceof TLRPC.TL_peerChannel) {
+                    TLRPC.TL_peerChannel peerChannel = (TLRPC.TL_peerChannel) peer;
+                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(peerChannel.channel_id);
+                    if (chat != null) {
+                        senders.add(peerChannel);
+                    }
+                } else if (peer instanceof TLRPC.TL_peerUser) {
+                    TLRPC.TL_peerUser peerUser = (TLRPC.TL_peerUser) peer;
+                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerUser.user_id);
+                    if (user != null) {
+                        senders.add(peerUser);
+                    }
                 }
-            };
-            Rect rect = new Rect();
-            scrimPopupContainerLayout.setOnTouchListener(new View.OnTouchListener() {
-                private int[] pos = new int[2];
+            }
+            if (senders.size() > 1) {
+                if (senders.size() > UserConfig.MAX_CHAT_SENDERS) {
+                    senders = (ArrayList<TLRPC.Peer>) senders.subList(0, UserConfig.MAX_CHAT_SENDERS);
+                }
+                ChatSendersCell chatSendersCell = new ChatSendersCell(contentView.getContext(), currentAccount, chatInfo, senders, contentView.getHeight() - AndroidUtilities.dp(96), peer -> {
+                    chatActivityEnterView.selectSenderView.setPeer(peer);
+                    getMessagesController().updateChatSendAs(dialog_id, peer, chatInfo);
+                    if (scrimPopupWindow != null) {
+                        scrimPopupWindow.dismiss(true);
+                    }
+                });
 
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                        if (scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
-                            View contentView = scrimPopupWindow.getContentView();
-                            contentView.getLocationInWindow(pos);
-                            rect.set(pos[0], pos[1], pos[0] + contentView.getMeasuredWidth(), pos[1] + contentView.getMeasuredHeight());
-                            if (!rect.contains((int) event.getX(), (int) event.getY())) {
+                FrameLayout scrimPopupContainerLayout = new FrameLayout(contentView.getContext()) {
+                    @Override
+                    public boolean dispatchKeyEvent(KeyEvent event) {
+                        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0 && scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
+                            scrimPopupWindow.dismiss();
+                        }
+                        return super.dispatchKeyEvent(event);
+                    }
+                };
+                Rect rect = new Rect();
+                scrimPopupContainerLayout.setOnTouchListener(new View.OnTouchListener() {
+                    private int[] pos = new int[2];
+
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                            if (scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
+                                View contentView = scrimPopupWindow.getContentView();
+                                contentView.getLocationInWindow(pos);
+                                rect.set(pos[0], pos[1], pos[0] + contentView.getMeasuredWidth(), pos[1] + contentView.getMeasuredHeight());
+                                if (!rect.contains((int) event.getX(), (int) event.getY())) {
+                                    scrimPopupWindow.dismiss();
+                                }
+                            }
+                        } else if (event.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
+                            if (scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
                                 scrimPopupWindow.dismiss();
                             }
                         }
-                    } else if (event.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
-                        if (scrimPopupWindow != null && scrimPopupWindow.isShowing()) {
-                            scrimPopupWindow.dismiss();
-                        }
+                        return false;
                     }
-                    return false;
-                }
-            });
-            scrimPopupContainerLayout.addView(chatSendersCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                });
+                scrimPopupContainerLayout.addView(chatSendersCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-            scrimPopupWindow = new ActionBarPopupWindow(scrimPopupContainerLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
-                @Override
-                public void dismiss(boolean animated) {
-                    super.dismiss(animated);
-                    scrimPopupWindow = null;
-                    chatActivityEnterView.selectSenderView.cancelCloseAnimation();
+                scrimPopupWindow = new ActionBarPopupWindow(scrimPopupContainerLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) {
+                    @Override
+                    public void dismiss(boolean animated) {
+                        super.dismiss(animated);
+                        scrimPopupWindow = null;
+                        chatActivityEnterView.selectSenderView.cancelCloseAnimation();
+                    }
+                };
+                scrimPopupWindow.setOutsideTouchable(true);
+                scrimPopupWindow.setClippingEnabled(true);
+                scrimPopupWindow.setFocusable(true);
+                scrimPopupWindow.setAnimationEnabled(false);
+                scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation3);
+                scrimPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
+                scrimPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
+                scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
+                scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(260), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(416), View.MeasureSpec.AT_MOST));
+                int popupX = 0;
+                if (AndroidUtilities.isTablet()) {
+                    int[] location = new int[2];
+                    fragmentView.getLocationInWindow(location);
+                    popupX += location[0];
                 }
-            };
-            scrimPopupWindow.setOutsideTouchable(true);
-            scrimPopupWindow.setClippingEnabled(true);
-            scrimPopupWindow.setFocusable(true);
-            scrimPopupWindow.setAnimationEnabled(false);
-            scrimPopupWindow.setAnimationStyle(R.style.PopupContextAnimation3);
-            scrimPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
-            scrimPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
-            scrimPopupWindow.getContentView().setFocusableInTouchMode(true);
-            scrimPopupContainerLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(260), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(416), View.MeasureSpec.AT_MOST));
-            int popupX = 0;
-            if (AndroidUtilities.isTablet()) {
-                int[] location = new int[2];
-                fragmentView.getLocationInWindow(location);
-                popupX += location[0];
+                int popupY = chatListView.getBottom() - scrimPopupContainerLayout.getMeasuredHeight();
+                scrimPopupWindow.showAtLocation(chatListView, Gravity.LEFT | Gravity.TOP, popupX, popupY);
+                scrimPopupWindow.dimBehind();
             }
-            int popupY = chatListView.getBottom() - scrimPopupContainerLayout.getMeasuredHeight();
-            scrimPopupWindow.showAtLocation(chatListView, Gravity.LEFT | Gravity.TOP, popupX, popupY);
-            scrimPopupWindow.dimBehind();
         } else if (tryReload) {
             getMessagesController().loadSendAsPeers(dialog_id, () -> showSelectSenderPopup(false));
         }
