@@ -9222,7 +9222,7 @@ public class MessagesController extends BaseController implements NotificationCe
         req.peer = getInputPeer(chat);
         req.enabled = enabled;
         getConnectionsManager().sendRequest(req, (response, error) -> {
-            if (response instanceof TLRPC.TL_boolTrue) {
+            if (response != null) {
                 AndroidUtilities.runOnUIThread(() -> {
                     chat.noforwards = enabled;
                     ArrayList<TLRPC.Chat> arrayList = new ArrayList<>(1);
@@ -9230,6 +9230,9 @@ public class MessagesController extends BaseController implements NotificationCe
                     getMessagesStorage().putUsersAndChats(null, arrayList, true, true);
                     getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_CHAT);
                 });
+                if (response instanceof TLRPC.Updates) {
+                    getMessagesController().processUpdates((TLRPC.Updates) response, false);
+                }
             }
         }, ConnectionsManager.RequestFlagInvokeAfter);
     }
