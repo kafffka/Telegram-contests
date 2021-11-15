@@ -25222,11 +25222,34 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     public void showSelectSenderPopup(boolean tryReload) {
         List<TLRPC.Peer> peers = getMessagesController().getSendAsPeers(dialog_id);
-        if (peers != null && peers.size() > 1) {
-            if (peers.size() > UserConfig.MAX_CHAT_SENDERS) {
-                peers = peers.subList(0, UserConfig.MAX_CHAT_SENDERS);
+        ArrayList<TLRPC.Peer> senders = new ArrayList<>(UserConfig.MAX_CHAT_SENDERS);
+        for (int i = 0; i < peers.size(); i++) {
+            TLRPC.Peer peer = peers.get(i);
+            if (peer instanceof TLRPC.TL_peerChat) {
+                TLRPC.TL_peerChat peerChat = (TLRPC.TL_peerChat) peer;
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(peerChat.chat_id);
+                if (chat != null) {
+                    senders.add(peerChat);
+                }
+            } else if (peer instanceof TLRPC.TL_peerChannel) {
+                TLRPC.TL_peerChannel peerChannel = (TLRPC.TL_peerChannel) peer;
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(peerChannel.channel_id);
+                if (chat != null) {
+                    senders.add(peerChannel);
+                }
+            } else if (peer instanceof TLRPC.TL_peerUser) {
+                TLRPC.TL_peerUser peerUser = (TLRPC.TL_peerUser) peer;
+                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerUser.user_id);
+                if (user != null) {
+                    senders.add(peerUser);
+                }
             }
-            ChatSendersCell chatSendersCell = new ChatSendersCell(contentView.getContext(), currentAccount, chatInfo, peers, contentView.getHeight() - AndroidUtilities.dp(96), peer -> {
+        }
+        if (peers != null && senders.size() > 1) {
+            if (senders.size() > UserConfig.MAX_CHAT_SENDERS) {
+                senders = (ArrayList<TLRPC.Peer>) senders.subList(0, UserConfig.MAX_CHAT_SENDERS);
+            }
+            ChatSendersCell chatSendersCell = new ChatSendersCell(contentView.getContext(), currentAccount, chatInfo, senders, contentView.getHeight() - AndroidUtilities.dp(96), peer -> {
                 chatActivityEnterView.selectSenderView.setPeer(peer);
                 getMessagesController().updateChatSendAs(dialog_id, peer, chatInfo);
                 if (scrimPopupWindow != null) {
