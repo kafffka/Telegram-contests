@@ -58,7 +58,28 @@ public class ChatSendersCell extends FrameLayout {
         shadowView.setScaleType(ImageView.ScaleType.FIT_XY);
         shadowView.setImageResource(R.drawable.header_shadow);
         shadowView.setAlpha(0f);
-        addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 6, Gravity.TOP, 0, 40, 0,0));
+        addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 6, Gravity.TOP, 0, 40, 0, 0));
+
+        int selectedPosition = 0;
+        for (int i = 0; i < peers.size(); i++) {
+            TLRPC.Peer peer = peers.get(i);
+            if (peer instanceof TLRPC.TL_peerChat) {
+                if (peer.chat_id == chatFull.default_send_as.chat_id) {
+                    selectedPosition = i;
+                    break;
+                }
+            } else if (peer instanceof TLRPC.TL_peerChannel) {
+                if (peer.channel_id == chatFull.default_send_as.channel_id) {
+                    selectedPosition = i;
+                    break;
+                }
+            } else if (peer instanceof TLRPC.TL_peerUser) {
+                if (peer.user_id == chatFull.default_send_as.user_id) {
+                    selectedPosition = i;
+                    break;
+                }
+            }
+        }
 
         recyclerListView = new RecyclerListView(getContext());
         recyclerListView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -67,6 +88,7 @@ public class ChatSendersCell extends FrameLayout {
                 chatSendersCellDelegate.didSelectPeer(peers.get(position));
             }
         });
+        int finalSelectedPosition = selectedPosition;
         recyclerListView.setAdapter(new RecyclerListView.SelectionAdapter() {
 
             @Override
@@ -89,18 +111,17 @@ public class ChatSendersCell extends FrameLayout {
                     TLRPC.TL_peerChat peerChat = (TLRPC.TL_peerChat) peer;
                     TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(peerChat.chat_id);
                     cell.setObject(chat, null, null);
-                    cell.setChecked(peer.chat_id == chatFull.default_send_as.chat_id, false);
                 } else if (peer instanceof TLRPC.TL_peerChannel) {
                     TLRPC.TL_peerChannel peerChannel = (TLRPC.TL_peerChannel) peer;
                     TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(peerChannel.channel_id);
                     cell.setObject(chat, null, null);
-                    cell.setChecked(peer.channel_id == chatFull.default_send_as.channel_id, false);
                 } else if (peer instanceof TLRPC.TL_peerUser) {
                     TLRPC.TL_peerUser peerUser = (TLRPC.TL_peerUser) peer;
                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerUser.user_id);
                     cell.setObject(user, null, LocaleController.getString("SelectSenderPersonalAccount", R.string.SelectSenderPersonalAccount));
-                    cell.setChecked(peer.user_id == chatFull.default_send_as.user_id, false);
                 }
+                cell.setChecked(position == finalSelectedPosition, false);
+
             }
 
             @Override
@@ -134,6 +155,7 @@ public class ChatSendersCell extends FrameLayout {
         Drawable shadowDrawable = ContextCompat.getDrawable(context, R.drawable.popup_fixed_alert).mutate();
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
         setBackground(shadowDrawable);
+        recyclerListView.scrollToPosition(finalSelectedPosition);
     }
 
     @Override
