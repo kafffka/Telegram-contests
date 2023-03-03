@@ -2,15 +2,18 @@ package org.telegram.ui.Components.voip;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
+import android.graphics.Outline;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
+import android.view.ViewOutlineProvider;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
@@ -29,6 +32,8 @@ public class VoIPWindowView extends FrameLayout {
     private int animationIndex = -1;
 
     VelocityTracker velocityTracker;
+    private float animateProgress;
+    private boolean isEnterAnimationDisplayed;
 
     public VoIPWindowView(Activity activity, boolean enterAnimation) {
         super(activity);
@@ -40,6 +45,25 @@ public class VoIPWindowView extends FrameLayout {
         activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         if (!enterAnimation) {
             runEnterTransition = true;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            setOutlineProvider(new ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    float radius;
+                    if (finished) {
+                        radius = AndroidUtilities.dp(32) * animateProgress;
+                    } else if (!isEnterAnimationDisplayed) {
+                        radius = AndroidUtilities.dp(32) * (1 - animateProgress);
+                    } else {
+                        radius = 0;
+                    }
+                    outline.setRoundRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight(), radius);
+
+                }
+            });
+            setClipToOutline(true);
         }
     }
 
@@ -138,7 +162,14 @@ public class VoIPWindowView extends FrameLayout {
             } else {
                 int account = UserConfig.selectedAccount;
                 animationIndex = NotificationCenter.getInstance(account).setAnimationInProgress(animationIndex, null);
-                animate().translationX(getMeasuredWidth()).setListener(new AnimatorListenerAdapter() {
+                animate().translationY(AndroidUtilities.dp(256)).alpha(0.5f)
+                    .setUpdateListener(animation -> {
+                        animateProgress = (float) animation.getAnimatedValue();
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            invalidateOutline();
+                        }
+                    })
+                    .setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         NotificationCenter.getInstance(account).onAnimationFinish(animationIndex);
@@ -161,8 +192,25 @@ public class VoIPWindowView extends FrameLayout {
 
     public void startEnterTransition() {
         if (!lockOnScreen) {
-            setTranslationX(getMeasuredWidth());
-            animate().translationX(0).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
+            setTranslationY(AndroidUtilities.dp(256));
+            setAlpha(0.5f);
+            animate().translationY(0).alpha(1f).setDuration(200).setInterpolator(CubicBezierInterpolator.DEFAULT)
+                .setUpdateListener(animation -> {
+                    if (!isEnterAnimationDisplayed && !finished) {
+                        animateProgress = (float) animation.getAnimatedValue();
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            invalidateOutline();
+                        }
+                    }
+                }).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    isEnterAnimationDisplayed = true;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        invalidateOutline();
+                    }
+                }
+            }).start();
         }
     }
 

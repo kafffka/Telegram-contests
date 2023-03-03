@@ -32,6 +32,7 @@ public class HintView extends FrameLayout {
     public static final int TYPE_SEARCH_AS_LIST = 3;
     public static final int TYPE_COMMON = 4;
     public static final int TYPE_POLL_VOTE = 5;
+    public static final int TYPE_BOTTOM_CENTER = 9;
 
     public TextView textView;
     private ImageView imageView;
@@ -74,7 +75,7 @@ public class HintView extends FrameLayout {
         textView.setTextColor(getThemedColor(Theme.key_chat_gifSaveHintText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setMaxLines(2);
-        if (type == 7 || type == 8 || type == 9) {
+        if (type == 7 || type == 8 || type == 9 || type == 10) {
             textView.setMaxWidth(AndroidUtilities.dp(310));
         } else if (type == 4) {
             textView.setMaxWidth(AndroidUtilities.dp(280));
@@ -112,7 +113,12 @@ public class HintView extends FrameLayout {
     public void setBackgroundColor(int background, int text) {
         textView.setTextColor(text);
         arrowImageView.setColorFilter(new PorterDuffColorFilter(background, PorterDuff.Mode.MULTIPLY));
-        textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(currentType == 7 || currentType == 8 ? 6 : 3), background));
+        textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(currentType == 7 || currentType == 8 || currentType == 9 ? 6 : 3), background));
+    }
+
+    public void setBackgroundColor(int background) {
+        arrowImageView.setColorFilter(new PorterDuffColorFilter(background, PorterDuff.Mode.MULTIPLY));
+        textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(currentType == 7 || currentType == 8 || currentType == 9 ? 6 : 3), background));
     }
 
     public void setOverrideText(String text) {
@@ -337,14 +343,14 @@ public class HintView extends FrameLayout {
             top += AndroidUtilities.dp(4);
         } else if (currentType == 6) {
             top += view.getMeasuredHeight() + getMeasuredHeight() + AndroidUtilities.dp(10);
-        } else if (currentType == 7 || currentType == 8 && isTopArrow) {
+        } else if (currentType == 7 || currentType == 10 || currentType == 8 && isTopArrow) {
             top += view.getMeasuredHeight() + getMeasuredHeight() + AndroidUtilities.dp(8);
         } else if (currentType == 8) {
             top -= AndroidUtilities.dp(10);
         }
 
         int centerX;
-        if (currentType == 8 && isTopArrow) {
+        if ((currentType == 8 || currentType == 10) && isTopArrow) {
             if (view instanceof SimpleTextView) {
                 SimpleTextView textView = (SimpleTextView) view;
                 Drawable drawable = textView.getRightDrawable();
@@ -369,7 +375,7 @@ public class HintView extends FrameLayout {
         top -= bottomOffset;
 
         int parentWidth = parentView.getMeasuredWidth();
-        if (isTopArrow && currentType != 6 && currentType != 7 && currentType != 8) {
+        if (isTopArrow && currentType != 6 && currentType != 7 && currentType != 8 && currentType != 10) {
             setTranslationY(extraTranslationY + (translationY = AndroidUtilities.dp(44)));
         } else {
             setTranslationY(extraTranslationY + (translationY = top - getMeasuredHeight()));
@@ -404,9 +410,14 @@ public class HintView extends FrameLayout {
             }
         }
         setTranslationX(offset);
-        float arrowX = centerX - (leftMargin + offset) - arrowImageView.getMeasuredWidth() / 2;
-        if (currentType == 7) {
-            arrowX += AndroidUtilities.dp(2);
+        float arrowX;
+        if (currentType == 10) {
+            arrowX = offset + getMeasuredWidth() / 2f - arrowImageView.getMeasuredWidth() / 2f;
+        } else {
+            arrowX = centerX - (leftMargin + offset) - arrowImageView.getMeasuredWidth() / 2f;
+            if (currentType == 7) {
+                arrowX += AndroidUtilities.dp(2);
+            }
         }
         arrowImageView.setTranslationX(arrowX);
         if (centerX > parentView.getMeasuredWidth() / 2) {

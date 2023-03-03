@@ -3985,6 +3985,8 @@
     <string name="VoipPeerVideoOutdated">Sorry, **%1$s** is using an old version of Telegram that doesn\'t support video calls.</string>
     <string name="VoipPeerVideoOutdatedMakeVoice">Make a voice call</string>
     <string name="VoipRateCallAlert">Please rate the quality of your Telegram call</string>
+    <string name="VoipRateCallTitle">Rate this call</string>
+    <string name="VoipRateCallDescription">Please rate the quality of this call.</string>
     <string name="VoipNeedMicPermissionWithHint">**Telegram** needs microphone access so that you can make calls. Tap Settings -> Permissions, and turn **Microphone** on.</string>
     <string name="VoipNeedMicCameraPermissionWithHint">**Telegram** needs camera and microphone access so that you can make video calls. Tap Settings -> Permissions, and turn **Microphone** and **Camera** on.</string>
     <string name="VoipNeedCameraPermission">Telegram needs access to your camera so that you can make video calls.</string>
@@ -4004,6 +4006,9 @@
     <string name="ReturnToCall">RETURN TO CALL</string>
     <string name="CallNotAvailable">Sorry, **%1$s** doesn\'t accept calls.</string>
     <string name="CallEmojiKeyTooltip">If emoji on %1$s\'s screen are the same, this call is 100%% secure.</string>
+    <string name="CallEmojiKeyTooltipTitle">**This call is end-to-end encrypted**</string>
+    <string name="CallEmojiKeyTooltipSmall">Encryption key of this call</string>
+    <string name="CallEmojiHide">Hide Emoji</string>
     <string name="CallMessageReportProblem">Rate Call</string>
     <string name="CallReportHint">What went wrong?</string>
     <string name="CallReportIncludeLogs">Include technical information</string>
@@ -4049,7 +4054,9 @@
     <string name="VoipSwitchToVideoCall">Switch to video call?</string>
     <string name="VoipSwitch">SWITCH</string>
     <string name="VoipUserMicrophoneIsOff">%s\'s microphone is off</string>
+    <string name="VoipYouMicrophoneIsOff">Your microphone is turned off</string>
     <string name="VoipUserCameraIsOff">%s\'s camera is off</string>
+    <string name="VoipWeakNetworkSignal">Weak network signal</string>
     <string name="AcceptCall">Accept</string>
     <string name="DeclineCall">Decline</string>
     <string name="RetryCall">Retry</string>

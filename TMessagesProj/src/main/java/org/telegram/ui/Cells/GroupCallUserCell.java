@@ -938,10 +938,13 @@ public class GroupCallUserCell extends FrameLayout {
         private BlobDrawable blobDrawable2;
 
         private boolean hasCustomColor;
+        private boolean zoomPositive;
         private int isMuted;
         private float progressToMuted = 0;
 
         boolean invalidateColor = true;
+        boolean useTimeRelatedAmplitude = false;
+        private long lastUpdateTime;
 
         public AvatarWavesDrawable(int minRadius, int maxRadius) {
             blobDrawable = new BlobDrawable(6);
@@ -955,8 +958,32 @@ public class GroupCallUserCell extends FrameLayout {
             blobDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
             blobDrawable2.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
         }
+        public AvatarWavesDrawable(int innerMinRadius, int innerMaxRadius, int outerMinRadius, int outerMaxRadius) {
+            blobDrawable = new BlobDrawable(2);
+            blobDrawable2 = new BlobDrawable(2);
+            blobDrawable.minRadius = innerMinRadius;
+            blobDrawable.maxRadius = innerMaxRadius;
+            blobDrawable2.minRadius = outerMinRadius;
+            blobDrawable2.maxRadius = outerMaxRadius;
+            blobDrawable.generateBlob();
+            blobDrawable2.generateBlob();
+            blobDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
+            blobDrawable2.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
+        }
+
+        public void setZoomPositive() {
+            zoomPositive = true;
+        }
 
         public void update() {
+            if (useTimeRelatedAmplitude) {
+                long dt = System.currentTimeMillis() - lastUpdateTime;
+                blobDrawable.updateAmplitude(dt);
+                blobDrawable.update(blobDrawable.amplitude, 1.02f);
+                blobDrawable2.updateAmplitude(dt);
+                blobDrawable2.update(blobDrawable2.amplitude, 1.02f);
+            }
+
             if (animateToAmplitude != amplitude) {
                 amplitude += animateAmplitudeDiff * 16;
                 if (animateAmplitudeDiff > 0) {
@@ -981,13 +1008,14 @@ public class GroupCallUserCell extends FrameLayout {
                     wavesEnter = 0f;
                 }
             }
+            lastUpdateTime = System.currentTimeMillis();
         }
 
         public void draw(Canvas canvas, float cx, float cy, View parentView) {
             if (SharedConfig.getLiteMode().enabled()) {
                 return;
             }
-            float scaleBlob = 0.8f + 0.4f * amplitude;
+            float scaleBlob = (zoomPositive ? 1f : 0.8f) + (zoomPositive ? 0.2f : 0.4f) * amplitude;
             if (showWaves || wavesEnter != 0) {
                 canvas.save();
                 float wavesEnter = CubicBezierInterpolator.DEFAULT.getInterpolation(this.wavesEnter);
@@ -1012,14 +1040,18 @@ public class GroupCallUserCell extends FrameLayout {
                     if (invalidateColor) {
                         int color = ColorUtils.blendARGB(Theme.getColor(Theme.key_voipgroup_speakingText), isMuted == 2 ? Theme.getColor(Theme.key_voipgroup_mutedByAdminIcon) : Theme.getColor(Theme.key_voipgroup_listeningText), progressToMuted);
                         blobDrawable.paint.setColor(ColorUtils.setAlphaComponent(color, (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
+                        blobDrawable2.paint.setColor(ColorUtils.setAlphaComponent(color, (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
                     }
                 }
 
-                blobDrawable.update(amplitude, 1f);
+                if (!useTimeRelatedAmplitude) {
+                    blobDrawable.update(amplitude, 1f);
+                }
                 blobDrawable.draw(cx, cy, canvas, blobDrawable.paint);
-
-                blobDrawable2.update(amplitude, 1f);
-                blobDrawable2.draw(cx, cy, canvas, blobDrawable.paint);
+                if (!useTimeRelatedAmplitude) {
+                    blobDrawable2.update(amplitude, 1f);
+                }
+                blobDrawable2.draw(cx, cy, canvas, blobDrawable2.paint);
                 canvas.restore();
             }
 
@@ -1041,6 +1073,10 @@ public class GroupCallUserCell extends FrameLayout {
             showWaves = show;
         }
 
+        public void setUseTimeRelatedAmplitude(boolean useTimeRelatedAmplitude) {
+            this.useTimeRelatedAmplitude = useTimeRelatedAmplitude;
+        }
+
         public void setAmplitude(double value) {
             float amplitude = (float) value / 80f;
             if (!showWaves) {
@@ -1058,6 +1094,12 @@ public class GroupCallUserCell extends FrameLayout {
         public void setColor(int color) {
             hasCustomColor = true;
             blobDrawable.paint.setColor(color);
+        }
+
+        public void setColors(int innerColor, int outerColor) {
+            hasCustomColor = true;
+            blobDrawable.paint.setColor(innerColor);
+            blobDrawable2.paint.setColor(outerColor);
         }
 
         public void setMuted(int status, boolean animated) {

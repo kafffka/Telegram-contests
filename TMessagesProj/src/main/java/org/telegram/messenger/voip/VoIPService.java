@@ -2388,6 +2388,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				if (sharedInstance == null || privateCall == null) {
 					return;
 				}
+				onAudioLevelsUpdated(uids, levels, voice);
 				NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.webRtcMicAmplitudeEvent, levels[0]);
 			});
 			tgVoip[CAPTURE_DEVICE_CAMERA].setOnStateUpdatedListener(this::onConnectionStateChanged);
@@ -2477,6 +2478,12 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
 
 		});
+	}
+
+	public void onAudioLevelsUpdated(int[] uids, float[] levels, boolean[] voice) {
+		for (StateListener stateListener: stateListeners) {
+			stateListener.onAudioLevelsUpdated(uids, levels, voice);
+		}
 	}
 
 	public boolean isVideoAvailable() {
@@ -2668,9 +2675,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 									LocaleController.getString("VoipAudioRoutingSpeaker", R.string.VoipAudioRoutingSpeaker),
 									isHeadsetPlugged ? LocaleController.getString("VoipAudioRoutingHeadset", R.string.VoipAudioRoutingHeadset) : LocaleController.getString("VoipAudioRoutingEarpiece", R.string.VoipAudioRoutingEarpiece),
 									currentBluetoothDeviceName != null ? currentBluetoothDeviceName : LocaleController.getString("VoipAudioRoutingBluetooth", R.string.VoipAudioRoutingBluetooth)},
-							new int[]{R.drawable.calls_menu_speaker,
-									isHeadsetPlugged ? R.drawable.calls_menu_headset : R.drawable.calls_menu_phone,
-									R.drawable.calls_menu_bluetooth}, (dialog, which) -> {
+							new int[]{R.drawable.msg_call_speaker,
+									isHeadsetPlugged ? R.drawable.calls_menu_headset : R.drawable.msg_call_earpiece,
+									R.drawable.msg_call_bluetooth}, (dialog, which) -> {
 								if (getSharedInstance() == null) {
 									return;
 								}
@@ -2687,6 +2694,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			}
 			builder.show();
 			return;
+		}
+		for (StateListener l : stateListeners) {
+			l.onStartChangeAudioSettings();
 		}
 		if (USE_CONNECTION_SERVICE && systemCallConnection != null && systemCallConnection.getCallAudioState() != null) {
 			if (hasEarpiece()) {
@@ -3404,8 +3414,18 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 		
 		if (needRateCall || forceRating || finalState.isRatingSuggested) {
-			startRatingActivity();
+			boolean isRateCallShown = false;
+			for (StateListener l : stateListeners) {
+				isRateCallShown |= l.onRateCall(true, privateCall.access_hash, privateCall.id);
+			}
+			if (!isRateCallShown) {
+				startRatingActivity();
+			}
 			needRateCall = false;
+		} else {
+			for (StateListener l : stateListeners) {
+				l.onRateCall(false, privateCall.access_hash, privateCall.id);
+			}
 		}
 		if (needSendDebugLog && finalState.debugLog != null) {
 			TLRPC.TL_phone_saveCallDebug req = new TLRPC.TL_phone_saveCallDebug();
@@ -3696,6 +3716,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				FileLog.d("proximity " + newIsNear);
 			}
 			isProximityNear = newIsNear;
+			for (StateListener l: stateListeners) {
+				l.isProximityNearChanged(isProximityNear);
+			}
 			try {
 				if (isProximityNear) {
 					proximityWakelock.acquire();
@@ -4384,6 +4407,18 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 		}
 
+		default void onStartChangeAudioSettings() {
+
+		}
+
+		default void onAudioLevelsUpdated(int[] uids, float[] levels, boolean[] voice) {
+
+		}
+
+		default void isProximityNearChanged(boolean isProximityNear) {
+
+		}
+
 		default void onAudioSettingsChanged() {
 
 		}
@@ -4406,6 +4441,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 		default void onScreenOnChange(boolean screenOn) {
 
+		}
+
+		default boolean onRateCall(boolean needRate, long accessToken, long callId) {
+			return false;
 		}
 	}
 
@@ -4482,6 +4521,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 
 	public static class SharedUIParams {
 		public boolean tapToVideoTooltipWasShowed;
+		public boolean tapToEmojiTooltipWasShowed;
 		public boolean cameraAlertWasShowed;
 		public boolean wasVideoCall;
 	}

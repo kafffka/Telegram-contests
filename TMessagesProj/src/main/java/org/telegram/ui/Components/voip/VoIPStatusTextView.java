@@ -158,6 +158,11 @@ public class VoIPStatusTextView extends FrameLayout {
         ellipsizeAnimator.removeView(textView[1]);
     }
 
+    public void showCallEnded(boolean animated) {
+        showTimer(animated);
+        timerView.setShowEndCall(true);
+    }
+
 
     private void replaceViews(View out, View in, Runnable onEnd) {
         out.setVisibility(View.VISIBLE);

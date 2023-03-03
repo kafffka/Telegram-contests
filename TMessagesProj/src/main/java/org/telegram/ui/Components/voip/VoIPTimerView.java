@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -13,6 +14,7 @@ import android.view.View;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.R;
 import org.telegram.messenger.voip.VoIPService;
 
 public class VoIPTimerView extends View {
@@ -24,6 +26,8 @@ public class VoIPTimerView extends View {
     String currentTimeStr;
     TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private int signalBarCount = 4;
+    private Drawable endCallDrawable;
+    private boolean showEndCall;
 
     Runnable updater = () -> {
         if (getVisibility() == View.VISIBLE) {
@@ -88,17 +92,26 @@ public class VoIPTimerView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         final StaticLayout timerLayout = this.timerLayout;
+        canvas.save();
         int totalWidth = timerLayout == null ? 0 : timerLayout.getWidth() + AndroidUtilities.dp(21);
-        canvas.save();
         canvas.translate((getMeasuredWidth() - totalWidth) / 2f, 0);
-        canvas.save();
-        canvas.translate(0, (getMeasuredHeight() - AndroidUtilities.dp(11)) / 2f);
-        for (int i = 0; i < 4; i++) {
-            Paint p = i + 1 > signalBarCount ? inactivePaint : activePaint;
-            rectF.set(AndroidUtilities.dpf2(4.16f) * i, AndroidUtilities.dpf2(2.75f) * (3 - i), AndroidUtilities.dpf2(4.16f) * i + AndroidUtilities.dpf2(2.75f), AndroidUtilities.dp(11));
-            canvas.drawRoundRect(rectF, AndroidUtilities.dpf2(0.7f), AndroidUtilities.dpf2(0.7f), p);
+
+        if (showEndCall) {
+            if (endCallDrawable == null) {
+                endCallDrawable = getResources().getDrawable(R.drawable.calls_decline);
+                endCallDrawable.setBounds(0, 0, AndroidUtilities.dp(15), AndroidUtilities.dp(15));
+            }
+            endCallDrawable.draw(canvas);
+        } else {
+            canvas.save();
+            canvas.translate(0, (getMeasuredHeight() - AndroidUtilities.dp(11)) / 2f);
+            for (int i = 0; i < 4; i++) {
+                Paint p = i + 1 > signalBarCount ? inactivePaint : activePaint;
+                rectF.set(AndroidUtilities.dpf2(4.16f) * i, AndroidUtilities.dpf2(2.75f) * (3 - i), AndroidUtilities.dpf2(4.16f) * i + AndroidUtilities.dpf2(2.75f), AndroidUtilities.dp(11));
+                canvas.drawRoundRect(rectF, AndroidUtilities.dpf2(0.7f), AndroidUtilities.dpf2(0.7f), p);
+            }
+            canvas.restore();
         }
-        canvas.restore();
 
         if (timerLayout != null) {
             canvas.translate(AndroidUtilities.dp(21), 0);
@@ -109,6 +122,11 @@ public class VoIPTimerView extends View {
 
     public void setSignalBarCount(int count) {
         signalBarCount = count;
+        invalidate();
+    }
+
+    public void setShowEndCall(boolean show) {
+        this.showEndCall = show;
         invalidate();
     }
 }

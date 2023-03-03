@@ -5,7 +5,6 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Color;
-import android.os.Build;
 import android.transition.ChangeBounds;
 import android.transition.Fade;
 import android.transition.TransitionManager;
@@ -18,7 +17,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -47,43 +45,40 @@ public class VoIPNotificationsLayout extends LinearLayout {
         super(context);
         setOrientation(VERTICAL);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            transitionSet = new TransitionSet();
-            transitionSet.addTransition(new Fade(Fade.OUT).setDuration(150))
-                    .addTransition(new ChangeBounds().setDuration(200))
-                    .addTransition(new Visibility() {
-                        @Override
-                        public Animator onAppear(ViewGroup sceneRoot, View view, TransitionValues startValues, TransitionValues endValues) {
-                            AnimatorSet set = new AnimatorSet();
-                            view.setAlpha(0);
-                            set.playTogether(
-                                    ObjectAnimator.ofFloat(view, View.ALPHA, 0, 1f),
-                                    ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, view.getMeasuredHeight(), 0)
-                            );
+        transitionSet = new TransitionSet();
+        transitionSet.addTransition(new Fade(Fade.OUT).setDuration(150))
+                .addTransition(new ChangeBounds().setDuration(200))
+                .addTransition(new Visibility() {
+                    @Override
+                    public Animator onAppear(ViewGroup sceneRoot, View view, TransitionValues startValues, TransitionValues endValues) {
+                        AnimatorSet set = new AnimatorSet();
+                        view.setPivotX(view.getMeasuredWidth() / 2f);
+                        view.setPivotY(view.getMeasuredHeight());
+                        view.setScaleX(0);
+                        view.setScaleY(0);
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(view, View.SCALE_X, 0, 1.1f, 1f),
+                                ObjectAnimator.ofFloat(view, View.SCALE_Y, 0, 1.1f, 1f)
+                        );
 
-                            set.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                        set.setInterpolator(CubicBezierInterpolator.DEFAULT);
 
-                            return set;
-                        }
-                    }.setDuration(200));
-            transitionSet.setOrdering(TransitionSet.ORDERING_TOGETHER);
-        }
+                        return set;
+                    }
+                }.setDuration(300));
+        transitionSet.setOrdering(TransitionSet.ORDERING_TOGETHER);
     }
 
-    public void addNotification(int iconRes, String text, String tag, boolean animated) {
+    public void addNotification(String text, String tag) {
         if (viewsByTag.get(tag) != null) {
             return;
         }
 
         NotificationView view = new NotificationView(getContext());
         view.tag = tag;
-        view.iconView.setImageResource(iconRes);
         view.textView.setText(text);
         viewsByTag.put(tag, view);
 
-        if (animated) {
-            view.startAnimation();
-        }
         if (lockAnimation) {
             viewToAdd.add(view);
         } else {
@@ -119,11 +114,9 @@ public class VoIPNotificationsLayout extends LinearLayout {
         if (viewToAdd.isEmpty() && viewToRemove.isEmpty()) {
             return;
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            ViewParent parent = getParent();
-            if (parent != null) {
-                TransitionManager.beginDelayedTransition(this, transitionSet);
-            }
+        ViewParent parent = getParent();
+        if (parent != null) {
+            TransitionManager.beginDelayedTransition(this, transitionSet);
         }
 
         for (int i = 0; i < viewToAdd.size(); i++) {
@@ -160,11 +153,9 @@ public class VoIPNotificationsLayout extends LinearLayout {
     public void beforeLayoutChanges() {
         wasChanged = false;
         if (!lockAnimation) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                ViewParent parent = getParent();
-                if (parent != null) {
-                    TransitionManager.beginDelayedTransition(this, transitionSet);
-                }
+            ViewParent parent = getParent();
+            if (parent != null) {
+                TransitionManager.beginDelayedTransition(this, transitionSet);
             }
         }
     }
@@ -176,49 +167,30 @@ public class VoIPNotificationsLayout extends LinearLayout {
         wasChanged = false;
     }
 
-    public int getChildsHight() {
+    public int getChildrenHeight() {
         int n = getChildCount();
         return (n > 0 ? AndroidUtilities.dp(16) : 0) + n * AndroidUtilities.dp(32);
     }
 
-    private static class NotificationView extends FrameLayout {
+    public static class NotificationView extends FrameLayout {
 
         public String tag;
-        ImageView iconView;
         TextView textView;
 
         public NotificationView(@NonNull Context context) {
             super(context);
             setFocusable(true);
             setFocusableInTouchMode(true);
-
-            iconView = new ImageView(context);
-            setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.4f))));
-            addView(iconView, LayoutHelper.createFrame(24, 24, 0, 10, 4, 10, 4));
+            updateBackgroundColor(ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.4f)));
 
             textView = new TextView(context);
             textView.setTextColor(Color.WHITE);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 44, 4, 16, 4));
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 12, 4, 12, 4));
         }
 
-        public void startAnimation() {
-            textView.setVisibility(View.GONE);
-            postDelayed(() -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                    TransitionSet transitionSet = new TransitionSet();
-                    transitionSet.
-                            addTransition(new Fade(Fade.IN).setDuration(150))
-                            .addTransition(new ChangeBounds().setDuration(200));
-                    transitionSet.setOrdering(TransitionSet.ORDERING_TOGETHER);
-                    ViewParent parent = getParent();
-                    if (parent != null) {
-                        TransitionManager.beginDelayedTransition((ViewGroup) parent, transitionSet);
-                    }
-                }
-
-                textView.setVisibility(View.VISIBLE);
-            }, 400);
+        public void updateBackgroundColor(int color) {
+            setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), color));
         }
     }
 

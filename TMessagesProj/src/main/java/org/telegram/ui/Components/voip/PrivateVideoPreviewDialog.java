@@ -2,6 +2,7 @@ package org.telegram.ui.Components.voip;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Dialog;
@@ -12,6 +13,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
+import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Shader;
 import android.media.projection.MediaProjectionManager;
@@ -22,6 +24,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -73,6 +76,13 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
     private int currentPage;
 
     private boolean needScreencast;
+    private float toggleCameraInputProgress;
+    private int fromViewSize;
+
+    float leftDistance;
+    float rightDistance;
+    float topDistance;
+    float bottomDistance;
 
     public PrivateVideoPreviewDialog(Context context, boolean mic, boolean screencast) {
         super(context);
@@ -171,13 +181,13 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
                         color2 = 0xff56C7FE;
                         color3 = 0;
                     } else if (a == 0 || a == 1 && needScreencast) {
-                        color1 = 0xff57A4FE;
-                        color2 = 0xff766EE9;
+                        color1 = 0xff4687EE;
+                        color2 = 0xff4CA7E7;
                         color3 = 0;
                     } else {
-                        color1 = 0xff766EE9;
-                        color2 = 0xffF05459;
-                        color3 = 0xffE4A756;
+                        color1 = 0xff5CBF8E;
+                        color2 = 0xff7FCD75;
+                        color3 = 0;
                     }
                     Shader gradient;
                     if (color3 != 0) {
@@ -250,9 +260,17 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
             titles[a].setOnClickListener(view -> viewPager.setCurrentItem(num, true));
         }
 
-        setAlpha(0);
-        setTranslationX(AndroidUtilities.dp(32));
-        animate().alpha(1f).translationX(0).setDuration(150).start();
+        setClipToOutline(true);
+        setOutlineProvider(new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, Outline outline) {
+                int left = (int) (leftDistance - fromViewSize / 2f - (leftDistance - fromViewSize / 2f) * toggleCameraInputProgress);
+                int right = (int) (leftDistance + fromViewSize / 2f + (rightDistance - fromViewSize / 2f) * toggleCameraInputProgress);
+                int top = (int) (topDistance - fromViewSize / 2f - (topDistance - fromViewSize / 2f) * toggleCameraInputProgress);
+                int bottom = (int) (topDistance + fromViewSize / 2f + (bottomDistance - fromViewSize / 2f) * toggleCameraInputProgress);
+                outline.setRoundRect(left, top, right, bottom,  AndroidUtilities.dp(26) * (1 - toggleCameraInputProgress));
+            }
+        });
 
         setWillNotDraw(false);
 
@@ -442,6 +460,31 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
             }
         });
         invalidate();
+    }
+
+    public void show(int[] from, int anchorSize, int width, int height) {
+        fromViewSize = anchorSize;
+        leftDistance = from[0] + fromViewSize / 2f;
+        rightDistance = width - leftDistance;
+        topDistance =  from[1] + fromViewSize / 2f;
+        bottomDistance =  height - topDistance;
+
+        titlesLayout.setAlpha(0f);
+        titlesLayout.setTranslationY(AndroidUtilities.dp(36));
+        positiveButton.setTranslationY(AndroidUtilities.dp(36));
+
+        ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+        animator.addUpdateListener(animation -> {
+            toggleCameraInputProgress = (float) animator.getAnimatedValue();
+            if (!isDismissed) {
+                invalidateOutline();
+            }
+            positiveButton.setTranslationY(AndroidUtilities.dp(32) * (1 - toggleCameraInputProgress));
+            titlesLayout.setTranslationY(AndroidUtilities.dp(32) * (1 - toggleCameraInputProgress));
+            titlesLayout.setAlpha(toggleCameraInputProgress);
+        });
+        animator.setDuration(150);
+        animator.start();
     }
 
     @Override
