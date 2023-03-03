@@ -88,8 +88,8 @@ public class VoIPColorsController {
     private long lastLightDarkColorsInvalidateTime;
     private long changeSignalTime;
 
-    private int bitmapWidth = 60;
-    private int bitmapHeight = 80;
+    private final int bitmapWidth = 60;
+    private final int bitmapHeight = 80;
 
     public VoIPColorsController(int colorsFlag, int startColorFlag) {
         this.currentColors = new int[3][4];
@@ -339,19 +339,6 @@ public class VoIPColorsController {
     }
 
     private Bitmap createBitmap() {
-        int screenWidth = AndroidUtilities.getRealScreenSize().x;
-        int screeHeight = AndroidUtilities.getRealScreenSize().y;
-
-        int scale;
-        if (screenWidth > screeHeight) {
-            scale = screenWidth / screeHeight;
-        } else {
-            scale = screeHeight / screenWidth;
-        }
-
-        bitmapWidth = 60;
-        bitmapHeight = bitmapWidth * scale;
-
         return Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
     }
 
