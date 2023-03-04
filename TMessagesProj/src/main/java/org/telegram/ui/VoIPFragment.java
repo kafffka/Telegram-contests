@@ -2430,20 +2430,13 @@ public class VoIPFragment implements VoIPService.StateListener, VoIPColorsContro
                 @Override
                 public Animator onAppear(ViewGroup sceneRoot, View view, TransitionValues startValues, TransitionValues endValues) {
                     ValueAnimator animator = ValueAnimator.ofFloat(0, 1f);
-//                    animator.addUpdateListener(animation -> {
-//                        float progress = (float) animation.getAnimatedValue();
-//                        view.setTranslationY(AndroidUtilities.dp(100) * (1 - progress));
-//                        view.setScaleX(progress);
-//                        view.setScaleY(progress);
-//                    });
-//                    if (view instanceof VoIPToggleButton2) {
-//                        view.setTranslationY(AndroidUtilities.dp(100));
-//                        view.setPivotX(view.getMeasuredWidth() / 2f);
-//                        view.setPivotY(view.getMeasuredHeight() / 2f);
-//                        view.setScaleX(0f);
-//                        view.setScaleY(0f);
-//                        animator.setStartDelay(((VoIPToggleButton2) view).animationDelay);
-//                    }
+                    if (view instanceof VoIPToggleButton2) {
+                        view.setTranslationY(AndroidUtilities.dp(100));
+                        view.setPivotX(view.getMeasuredWidth() / 2f);
+                        view.setPivotY(view.getMeasuredHeight() / 2f);
+                        view.setScaleX(0f);
+                        view.setScaleY(0f);
+                    }
                     return animator;
                 }
 
