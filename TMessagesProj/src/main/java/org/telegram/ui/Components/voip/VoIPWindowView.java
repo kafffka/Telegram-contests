@@ -38,6 +38,7 @@ public class VoIPWindowView extends FrameLayout {
     public VoIPWindowView(Activity activity, boolean enterAnimation) {
         super(activity);
         this.activity = activity;
+        this.animateProgress = 1f;
         setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         setFitsSystemWindows(true);
 

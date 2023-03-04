@@ -529,10 +529,16 @@ public class VoIPFragment implements VoIPService.StateListener, VoIPColorsContro
             centerNotificationsLayout.setAlpha(1f);
             centerNotificationsLayout.beforeLayoutChanges();
             if (count <= 1) {
-                voIPColorsController.showWeakSignal();
+                if (!voIPColorsController.isWeakSignalActive()) {
+                    voIPColorsController.showWeakSignal();
+                    scheduleStopAnimations();
+                }
                 centerNotificationsLayout.addNotification(LocaleController.getString("VoipWeakNetworkSignal", R.string.VoipWeakNetworkSignal), "weak_signal");
             } else {
-                voIPColorsController.hideWeakSignal();
+                if (voIPColorsController.isWeakSignalActive()) {
+                    voIPColorsController.hideWeakSignal();
+                    scheduleStopAnimations();
+                }
                 centerNotificationsLayout.removeNotification("weak_signal");
             }
             centerNotificationsLayout.animateLayoutChanges();
@@ -966,8 +972,8 @@ public class VoIPFragment implements VoIPService.StateListener, VoIPColorsContro
         }
 
         emojiContainer.addView(emojiLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
-        emojiContainer.addView(emojiRationalTitleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 24, 0, 24, 0));
-        emojiContainer.addView(emojiRationalTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 24, 16, 24, 16));
+        emojiContainer.addView(emojiRationalTitleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 16, 0, 16, 0));
+        emojiContainer.addView(emojiRationalTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 16, 16, 16, 16));
         frameLayout.addView(emojiContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 40, 16, 40, 0));
 
         rateCallLayout = new LinearLayout(context);
@@ -1687,11 +1693,6 @@ public class VoIPFragment implements VoIPService.StateListener, VoIPColorsContro
         boolean showCallingAvatarMini = true;
         int statusLayoutOffset;
         VoIPService service = VoIPService.getSharedInstance();
-
-        FileLog.d("LogTestReveal updateViewState");
-        FileLog.d("LogTestReveal previousState: " + previousState);
-        FileLog.d("LogTestReveal currentState: " + currentState);
-
         switch (currentState) {
             case VoIPService.STATE_WAITING_INCOMING:
                 showAcceptDeclineView = true;
@@ -1741,7 +1742,8 @@ public class VoIPFragment implements VoIPService.StateListener, VoIPColorsContro
                 acceptDeclineButtons[0].setShowWaves(false);
                 acceptDeclineButtons[0].setIsRepeatAnimation(false);
                 acceptDeclineButtons[0].setLottieData(R.raw.call_accept, Color.WHITE, 0xFF40C749, LocaleController.getString("RetryCall", R.string.RetryCall), false, new String[] {"Shape Layer 2.**", "Shape Layer 1.**", "Call Accept Outlines.**",});
-
+                isAcceptButtonClicked = false;
+                needAnimateFromAcceptButton = false;
                 currentUserIsVideo = false;
                 callingUserIsVideo = false;
                 break;
@@ -2512,47 +2514,7 @@ public class VoIPFragment implements VoIPService.StateListener, VoIPColorsContro
 
         if (!isAllButtonsVisibleBefore && isAllButtonsVisibleAfter) {
             if (needAnimateFromAcceptButton) {
-                for (int i = 0; i < 3; i++) {
-                    VoIPToggleButton2 button = bottomButtons[i];
-                    button.post(() -> {
-                        int[] coord = new int[2];
-                        button.getLocationInWindow(coord);
-                        ValueAnimator animator = ValueAnimator.ofFloat(0, 1f);
-                        float finalX = button.getX();
-                        animator.addUpdateListener(animation -> {
-                            float progress = (float) animation.getAnimatedValue();
-                            button.setTranslationX((lastAcceptButtonLocation[0] - finalX) * (1 - progress));
-                            button.setTranslationY(-(coord[1] - lastAcceptButtonLocation[1]) * (1 - progress));
-                            float scaleProgress = progress < 0.5f ? 0.8f + 0.1f * (1 - progress) : 0.8f + 0.1f * progress;
-                            button.setScaleX(scaleProgress);
-                            button.setScaleY(scaleProgress);
-                            button.setAlpha(progress);
-                        });
-                        animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
-                        animator.setDuration(400);
-                        animator.start();
-                    });
-                }
-
-                VoIPToggleButton2 button = bottomButtons[3];
-                button.post(() -> {
-                    int[] coord = new int[2];
-                    button.getLocationInWindow(coord);
-                    ValueAnimator animator = ValueAnimator.ofFloat(0, 1f);
-                    float finalX = button.getX();
-                    animator.addUpdateListener(animation -> {
-                        float progress = (float) animation.getAnimatedValue();
-                        button.setTranslationX((lastDeclineButtonLocation[0] - finalX) * (1 - progress));
-                        button.setTranslationY(-(coord[1] - lastDeclineButtonLocation[1]) * (1 - progress));
-                        float scaleProgress = progress < 0.5f ? 0.8f + 0.1f * (1 - progress) : 0.8f + 0.1f * progress;
-                        button.setScaleX(scaleProgress);
-                        button.setScaleY(scaleProgress);
-                        button.setAlpha(progress);
-                    });
-                    animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
-                    animator.setDuration(400);
-                    animator.start();
-                });
+                startAnimationFromAcceptButton();
             } else {
                 for (int i = 0; i < 4; i++) {
                     VoIPToggleButton2 button = bottomButtons[i];
@@ -2576,6 +2538,51 @@ public class VoIPFragment implements VoIPService.StateListener, VoIPColorsContro
                 }
             }
         }
+    }
+
+    private void startAnimationFromAcceptButton() {
+        for (int i = 0; i < 3; i++) {
+            VoIPToggleButton2 button = bottomButtons[i];
+            button.post(() -> {
+                int[] coord = new int[2];
+                button.getLocationInWindow(coord);
+                ValueAnimator animator = ValueAnimator.ofFloat(0, 1f);
+                float finalX = button.getX();
+                animator.addUpdateListener(animation -> {
+                    float progress = (float) animation.getAnimatedValue();
+                    button.setTranslationX((lastAcceptButtonLocation[0] - finalX) * (1 - progress));
+                    button.setTranslationY(-(coord[1] - lastAcceptButtonLocation[1]) * (1 - progress));
+                    float scaleProgress = progress < 0.5f ? 0.8f + 0.1f * (1 - progress) : 0.8f + 0.1f * progress;
+                    button.setScaleX(scaleProgress);
+                    button.setScaleY(scaleProgress);
+                    button.setAlpha(progress);
+                });
+                animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                animator.setDuration(400);
+                animator.start();
+            });
+        }
+
+        VoIPToggleButton2 button = bottomButtons[3];
+        button.post(() -> {
+            int[] coord = new int[2];
+            button.getLocationInWindow(coord);
+            ValueAnimator animator = ValueAnimator.ofFloat(0, 1f);
+            float finalX = button.getX();
+            animator.addUpdateListener(animation -> {
+                float progress = (float) animation.getAnimatedValue();
+                button.setTranslationX((lastDeclineButtonLocation[0] - finalX) * (1 - progress));
+                button.setTranslationY(-(coord[1] - lastDeclineButtonLocation[1]) * (1 - progress));
+                float scaleProgress = progress < 0.5f ? 0.8f + 0.1f * (1 - progress) : 0.8f + 0.1f * progress;
+                button.setScaleX(scaleProgress);
+                button.setScaleY(scaleProgress);
+                button.setAlpha(progress);
+            });
+            animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+            animator.setDuration(400);
+            animator.start();
+        });
+        needAnimateFromAcceptButton = false;
     }
 
     private void setMicrophoneAction(VoIPToggleButton2 bottomButton, VoIPService service, boolean animated) {

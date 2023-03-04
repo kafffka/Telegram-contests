@@ -21,7 +21,6 @@ import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -29,7 +28,7 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 
 public class VoIPToggleButton2 extends FrameLayout {
-    private static final long ANIMATION_DURATION = 200L;
+    private static final long ANIMATION_DURATION = 250L;
     private static final int ANIMATION_FLAG_NONE = 0;
     private static final int ANIMATION_FLAG_ICON = 1 << 1;
     private static final int ANIMATION_FLAG_ICON_COLOR = 1 << 2;
@@ -67,6 +66,13 @@ public class VoIPToggleButton2 extends FrameLayout {
     private boolean isShowWaves = false;
     private float smallRadius;
     private boolean expandSmallRadius = true;
+    public boolean needAnimateToWideButton;
+    private int startX;
+    private int startY;
+    private ValueAnimator animatorToWide;
+    private float animateToWideProgress;
+    private RectF wideButtonRect;
+    private TextView buttonText;
 
     public VoIPToggleButton2(@NonNull Context context) {
         this(context, 52f, 48);
@@ -183,14 +189,6 @@ public class VoIPToggleButton2 extends FrameLayout {
         setData(iconRes, iconColor, backgroundColor, text, animated);
     }
 
-    public boolean needAnimateToWideButton;
-    private int startX;
-    private int startY;
-    private ValueAnimator animatorToWide;
-    private float animateToWideProgress;
-    private RectF wideButtonRect;
-    private TextView buttonText;
-
     public void setTextData(int backgroundColor, String text, int startX, int startY) {
         if (animatorToWide != null) {
             return;
@@ -255,20 +253,12 @@ public class VoIPToggleButton2 extends FrameLayout {
     }
 
     public void setData(int iconRes, int iconColor, int backgroundColor, String text, boolean animated) {
-        FileLog.d("LogTest2  ---------------- " + text + " ----------------");
-        FileLog.d("LogTest animated: " + animated);
-        FileLog.d("LogTest is lottie: " + isLottieIcon);
-        FileLog.d("LogTest iconRes: " + iconRes);
-        FileLog.d("LogTest iconColor: " + iconColor);
-
         if (getVisibility() != View.VISIBLE && !needAnimateToWideButton) {
-            FileLog.d("LogTest2 change state to visible");
             animated = false;
             setVisibility(View.VISIBLE);
         }
 
         if (this.iconRes == iconRes && this.iconColor == iconColor && currentBackgroundColor == backgroundColor && (currentText != null && currentText.equals(text))) {
-            FileLog.d("LogTest data is the same");
             return;
         }
 
@@ -291,23 +281,18 @@ public class VoIPToggleButton2 extends FrameLayout {
             boolean replaceText = currentText == null || !currentText.equals(text);
 
             if (replaceBackgroundColor) {
-                FileLog.d("LogTest animation: ANIMATION_FLAG_BACKGROUND_COLOR");
                 animationFlag |= ANIMATION_FLAG_BACKGROUND_COLOR;
             }
             if (replaceDrawable) {
-                FileLog.d("LogTest animation: ANIMATION_FLAG_ICON");
                 animationFlag |= ANIMATION_FLAG_ICON;
             }
             if (replaceBackgroundColor && replaceDrawable) {
-                FileLog.d("LogTest animation: ANIMATION_FLAG_SIZE");
                 animationFlag |= ANIMATION_FLAG_SIZE;
             }
             if (replaceIconColor) {
-                FileLog.d("LogTest animation: ANIMATION_FLAG_ICON_COLOR");
                 animationFlag |= ANIMATION_FLAG_ICON_COLOR;
             }
             if (replaceText) {
-                FileLog.d("LogTest animation: ANIMATION_FLAG_TEXT");
                 animationFlag |= ANIMATION_FLAG_TEXT;
             }
         }
@@ -336,10 +321,7 @@ public class VoIPToggleButton2 extends FrameLayout {
     private void applyAnimation() {
         if (replaceAnimator != null) {
             replaceAnimator.cancel();
-            FileLog.d("LogTest cancel animator");
         }
-        FileLog.d("LogTest apply animation, flag = " + animationFlag);
-
         if (animationFlag == ANIMATION_FLAG_NONE) {
             bigCirclePaint.setColor(currentBackgroundColor);
 
@@ -398,49 +380,29 @@ public class VoIPToggleButton2 extends FrameLayout {
             textView[1].setText(currentText);
             textView[1].setVisibility(View.VISIBLE);
             textView[1].setAlpha(0);
-            textView[1].setScaleX(0);
-            textView[1].setScaleY(0);
         }
         replaceAnimator.addUpdateListener(valueAnimator -> {
             replaceProgress = (float) valueAnimator.getAnimatedValue();
-            FileLog.d("LogTest replaceProgress " + replaceProgress);
             invalidate();
             if (animateText) {
-                textView[0].setAlpha(1f - replaceProgress);
-                textView[0].setScaleX(1f - replaceProgress);
-                textView[0].setScaleY(1f - replaceProgress);
-
-                textView[1].setAlpha(replaceProgress);
-                textView[1].setScaleX(replaceProgress);
-                textView[1].setScaleY(replaceProgress);
+                if (replaceProgress < 0.5f) {
+                    float textAnimationProgress = replaceProgress * 2f;
+                    textView[0].setAlpha(1f - textAnimationProgress);
+                    textView[0].setTranslationY(-AndroidUtilities.dp(2) * textAnimationProgress);
+                    textView[1].setAlpha(textAnimationProgress);
+                    textView[1].setTranslationY(AndroidUtilities.dp(2) * (1f - textAnimationProgress));
+                }
             }
 
             if ((animationFlag & ANIMATION_FLAG_SIZE) != 0) {
-                FileLog.d("LogTest start scaling");
                 lottieImageView.setScaleX(replaceProgress);
                 lottieImageView.setScaleY(replaceProgress);
-                FileLog.d("LogTest end scaling");
             } else if ((animationFlag & ANIMATION_FLAG_ICON_COLOR) != 0) {
-                FileLog.d("LogTest start changing animation");
                 int color = ColorUtils.blendARGB(prevIconColor, iconColor, replaceProgress);
                 setIconColor(color);
-            } else {
-                FileLog.d("LogTest WOW, animation flag = " + animationFlag);
             }
         });
         replaceAnimator.addListener(new AnimatorListenerAdapter() {
-
-            @Override
-            public void onAnimationCancel(Animator animation) {
-                super.onAnimationCancel(animation);
-                FileLog.d("LogTest onAnimationCancel");
-            }
-
-            @Override
-            public void onAnimationPause(Animator animation) {
-                super.onAnimationPause(animation);
-                FileLog.d("LogTest onAnimationPause");
-            }
 
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -454,17 +416,13 @@ public class VoIPToggleButton2 extends FrameLayout {
                     textView[1].setVisibility(View.GONE);
 
                     textView[0].setAlpha(1f);
-                    textView[0].setScaleX(1f);
-                    textView[0].setScaleY(1f);
+                    textView[0].setTranslationY(0f);
                 }
-                FileLog.d("LogTest finish animation, flags: " + animationFlag);
                 if ((animationFlag & ANIMATION_FLAG_SIZE) != 0) {
                     lottieImageView.setScaleX(1f);
                     lottieImageView.setScaleY(1f);
-                    FileLog.d("LogTest finish scaling");
                 } else if ((animationFlag & ANIMATION_FLAG_ICON_COLOR) != 0) {
                     setIconColor(iconColor);
-                    FileLog.d("LogTest finish change color");
                 }
                 replaceProgress = 0f;
                 animationFlag = ANIMATION_FLAG_NONE;
@@ -476,22 +434,18 @@ public class VoIPToggleButton2 extends FrameLayout {
         if ((animationFlag & ANIMATION_FLAG_SIZE) != 0) {
             if (isLottieIcon) {
                 if ((animationFlag & ANIMATION_FLAG_ICON) != 0) {
-                    FileLog.d("LogTest run delay current lottie icon");
                     setCurrentLottieIcon(iconRes, layers, false);
                     AndroidUtilities.runOnUIThread(this::startLottieAnimation, ANIMATION_DURATION - 50);
                 } else {
-                    FileLog.d("LogTest set current lottie icon");
                     setCurrentLottieIcon(iconRes, layers, true);
                 }
             } else {
-                FileLog.d("LogTest set current static icon");
                 setCurrentStaticIcon(iconRes);
             }
         }
 
         if (((animationFlag & ANIMATION_FLAG_ICON_COLOR) != 0) && (animationFlag & ANIMATION_FLAG_SIZE) == 0) {
             setIconColor(prevIconColor);
-            FileLog.d("LogTest set prev icon color");
         }
 
         if (((animationFlag & ANIMATION_FLAG_ICON) != 0) && ((animationFlag & ANIMATION_FLAG_SIZE) == 0)) {
@@ -507,25 +461,9 @@ public class VoIPToggleButton2 extends FrameLayout {
     }
 
     public void startLottieAnimation() {
-        FileLog.d("LogTest startLottieAnimation");
-//        if (isAttachedToWindow()) {
         if (getVisibility() == View.VISIBLE && !lottieImageView.isPlaying()) {
-            FileLog.d("LogTest startLottieAnimation inside");
             lottieImageView.playAnimation();
         }
-//        }
-    }
-
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        FileLog.d("LogTest onAttachedToWindow");
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        FileLog.d("LogTest onDetachedFromWindow");
-        super.onDetachedFromWindow();
     }
 
     private void setCurrentIcon() {
@@ -537,7 +475,6 @@ public class VoIPToggleButton2 extends FrameLayout {
     }
 
     private void setCurrentLottieIcon(int iconRes, String[] layers, boolean lastFrame) {
-        FileLog.d("LogTest setCurrentLottieIcon");
         lottieImageView.setPadding(0, 0, 0, 0);
         lottieImageView.setAutoRepeat(isRepeatAnimation);
         lottieImageView.setAnimation(iconRes, (int) iconSize, (int) iconSize);

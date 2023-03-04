@@ -979,9 +979,9 @@ public class GroupCallUserCell extends FrameLayout {
             if (useTimeRelatedAmplitude) {
                 long dt = System.currentTimeMillis() - lastUpdateTime;
                 blobDrawable.updateAmplitude(dt);
-                blobDrawable.update(blobDrawable.amplitude, 1.02f);
+                blobDrawable.update(blobDrawable.amplitude, 1f);
                 blobDrawable2.updateAmplitude(dt);
-                blobDrawable2.update(blobDrawable2.amplitude, 1.02f);
+                blobDrawable2.update(blobDrawable2.amplitude, 1f);
             }
 
             if (animateToAmplitude != amplitude) {

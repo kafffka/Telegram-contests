@@ -272,7 +272,7 @@ public class VoIPColorsController {
     }
 
     public void pause(boolean fast) {
-        if (fast) {
+        if (fast || signal == SIGNAL_WEAK) {
             lastPauseTime = SystemClock.elapsedRealtime();
             isPaused = true;
             isRunning = false;
@@ -294,6 +294,10 @@ public class VoIPColorsController {
             System.arraycopy(currentColors[i], 0, prevColors[i], 0, 4);
         }
         signal = SIGNAL_WEAK;
+    }
+
+    public boolean isWeakSignalActive() {
+        return signal == SIGNAL_WEAK;
     }
 
     public void hideWeakSignal() {
