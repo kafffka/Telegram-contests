@@ -2552,7 +2552,7 @@ public class VoIPFragment implements VoIPService.StateListener, VoIPColorsContro
                     float progress = (float) animation.getAnimatedValue();
                     button.setTranslationX((lastAcceptButtonLocation[0] - finalX) * (1 - progress));
                     button.setTranslationY(-(coord[1] - lastAcceptButtonLocation[1]) * (1 - progress));
-                    float scaleProgress = progress < 0.5f ? 0.8f + 0.1f * (1 - progress) : 0.8f + 0.1f * progress;
+                    float scaleProgress = progress < 0.5f ? 0.8f + 0.2f * (1 - progress) : 0.8f + 0.2f * progress;
                     button.setScaleX(scaleProgress);
                     button.setScaleY(scaleProgress);
                     button.setAlpha(progress);
@@ -2573,7 +2573,7 @@ public class VoIPFragment implements VoIPService.StateListener, VoIPColorsContro
                 float progress = (float) animation.getAnimatedValue();
                 button.setTranslationX((lastDeclineButtonLocation[0] - finalX) * (1 - progress));
                 button.setTranslationY(-(coord[1] - lastDeclineButtonLocation[1]) * (1 - progress));
-                float scaleProgress = progress < 0.5f ? 0.8f + 0.1f * (1 - progress) : 0.8f + 0.1f * progress;
+                float scaleProgress = progress < 0.5f ? 0.8f + 0.2f * (1 - progress) : 0.8f + 0.2f * progress;
                 button.setScaleX(scaleProgress);
                 button.setScaleY(scaleProgress);
                 button.setAlpha(progress);
