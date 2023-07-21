@@ -432,9 +432,11 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                     orientation = getOrientation(data);
                     if (info.frontCamera != 0 && flipFront) {
                         try {
+                            boolean isRotated = false;
                             Matrix matrix = new Matrix();
                             if (!ignoreOrientation && orientation != -1) {
                                 matrix.setRotate(orientation);
+                                isRotated = true;
                             }
                             matrix.postScale(-1, 1);
                             Bitmap scaled = Bitmaps.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
@@ -450,7 +452,7 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                                 ImageLoader.getInstance().putImageToCache(new BitmapDrawable(scaled), key, false);
                             }
                             if (callback != null) {
-                                callback.run(orientation);
+                                callback.run(isRotated ? -1 : orientation);
                             }
                             return;
                         } catch (Throwable e) {
