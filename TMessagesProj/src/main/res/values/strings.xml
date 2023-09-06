@@ -50,6 +50,7 @@
     <string name="WrongCode">You entered the wrong code. Please try again.</string>
     <string name="DidNotGetTheCode">Didn\'t get the code?</string>
     <string name="DidNotGetTheCodeSms">Send the code as an SMS</string>
+    <string name="DidNotGetTheCodeFragment">Get a code via Fragment</string>
     <string name="CancelAccountReset">Cancel account reset</string>
     <string name="CancelAccountResetInfo2">Somebody with access to **%1$s** has requested to delete your Telegram account and reset your 2-Step Verification password.\n\nIf this wasn\'t you, please enter the code we\'ve just sent you via SMS. You can also cancel this by *changing your phone number*.</string>
     <string name="ResetAccount">Reset account</string>
