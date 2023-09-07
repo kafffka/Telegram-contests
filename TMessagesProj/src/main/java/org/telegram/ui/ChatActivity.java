@@ -4980,6 +4980,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                             top = view.getTop();
                                             if (view instanceof ChatMessageCell) {
                                                 cell = (ChatMessageCell) view;
+                                                if (cell.getSlidingOffsetX() + cell.getCheckBoxTranslation() > tx) {
+                                                    tx = cell.getSlidingOffsetX() + cell.getCheckBoxTranslation();
+                                                }
                                                 if (!cell.drawPinnedTop()) {
                                                     break;
                                                 } else {
@@ -4997,6 +5000,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                             top = holder.itemView.getTop();
                                             if (holder.itemView instanceof ChatMessageCell) {
                                                 cell = (ChatMessageCell) holder.itemView;
+                                                if (cell.getSlidingOffsetX() + cell.getCheckBoxTranslation() > tx) {
+                                                    tx = cell.getSlidingOffsetX() + cell.getCheckBoxTranslation();
+                                                }
                                                 if (!cell.drawPinnedTop()) {
                                                     break;
                                                 } else {
