@@ -182,6 +182,9 @@ public class Input {
 
         long dt = System.currentTimeMillis() - lastVelocityUpdate;
         velocity = MathUtils.clamp(velocity - dt / 125f, 0.6f, 1f);
+        if (renderView.getCurrentBrush() != null && renderView.getCurrentBrush() instanceof Brush.Arrow) {
+            velocity = 1 - velocity;
+        }
         lastScale = scale;
         lastVelocityUpdate = System.currentTimeMillis();
 
@@ -192,7 +195,7 @@ public class Input {
             stylusToolPressed = (event.getButtonState() & MotionEvent.BUTTON_STYLUS_PRIMARY) == MotionEvent.BUTTON_STYLUS_PRIMARY;
         }
         if (renderView.getCurrentBrush() != null) {
-            weight = 1 + (weight - 1) * AndroidUtilities.lerp(1, renderView.getCurrentBrush().getSmoothThicknessRate(), MathUtils.clamp(realPointsCount / 16f, 0, 1));
+            weight = 1 + (weight - 1) * AndroidUtilities.lerp(renderView.getCurrentBrush().getSmoothThicknessRate(), 1, MathUtils.clamp(realPointsCount / 16f, 0, 1));
         }
         Point location = new Point(tempPoint[0], tempPoint[1], weight);
 
@@ -464,7 +467,7 @@ public class Input {
         double x = midPoint1.x * minus_t_squard + 2 * prev1.x * t * (1 - t) + midPoint2.x * t_squared;
         double y = midPoint1.y * minus_t_squard + 2 * prev1.y * t * (1 - t) + midPoint2.y * t_squared;
         double z = midPoint1.z * a1 + prev1.z * a2 + midPoint2.z * a3;
-        z = 1 + (z - 1) * AndroidUtilities.lerp(1, smoothThickness, MathUtils.clamp(realPointsCount / 16f, 0, 1));
+        z = 1 + (z - 1) * AndroidUtilities.lerp(smoothThickness, 1, MathUtils.clamp(realPointsCount / 16f, 0, 1));
 
         return new Point(x, y, z);
     }
