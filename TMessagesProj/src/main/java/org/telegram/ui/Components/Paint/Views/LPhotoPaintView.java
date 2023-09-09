@@ -260,7 +260,8 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         inBubbleMode = context instanceof BubbleActivity;
 
         PersistColorPalette palette = PersistColorPalette.getInstance(currentAccount);
-        colorSwatch.color = palette.getColor(0);
+        palette.resetCurrentColor();
+        colorSwatch.color = palette.getCurrentColor();
         colorSwatch.brushWeight = palette.getCurrentWeight();
 
         queue = new DispatchQueue("Paint");
@@ -1238,6 +1239,10 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         tabsNewSelectedIndex = index;
         final View newView = getBarView(tabsNewSelectedIndex);
 
+        PersistColorPalette.getInstance(currentAccount).setInTextMode(index == 2);
+        colorSwatch.color = PersistColorPalette.getInstance(currentAccount).getCurrentColor();
+        setCurrentSwatch(colorSwatch, true);
+
         tabsSelectionAnimator = ValueAnimator.ofFloat(0, 1).setDuration(300);
         tabsSelectionAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
         tabsSelectionAnimator.addUpdateListener(animation -> {
@@ -1974,8 +1979,10 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             ignoreToolChangeAnimationOnce = true;
         }
         renderView.setBrush(brush);
+        int wasColor = colorSwatch.color;
+        colorSwatch.color = PersistColorPalette.getInstance(currentAccount).getCurrentColor();
         colorSwatch.brushWeight = weightDefaultValueOverride.get();
-        setCurrentSwatch(colorSwatch, true);
+        setCurrentSwatch(colorSwatch, true, wasColor);
         renderInputView.invalidate();
     }
 
@@ -2093,6 +2100,10 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
     }
 
     private void setCurrentSwatch(Swatch swatch, boolean updateInterface) {
+        setCurrentSwatch(swatch, updateInterface, null);
+    }
+
+    private void setCurrentSwatch(Swatch swatch, boolean updateInterface, Integer prevColor) {
         if (colorSwatch != swatch) {
             colorSwatch.color = swatch.color;
             colorSwatch.colorLocation = swatch.colorLocation;
@@ -2106,7 +2117,18 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         renderView.setBrushSize(swatch.brushWeight);
 
         if (updateInterface) {
-            if (bottomLayout != null) {
+            int newColor = colorSwatch.color;
+            if (prevColor != null && prevColor != newColor) {
+                ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f).setDuration(150);
+                animator.addUpdateListener(animation -> {
+                    float val = (float) animation.getAnimatedValue();
+                    colorSwatch.color = ColorUtils.blendARGB(prevColor, newColor, val);
+                    if (bottomLayout != null) {
+                        bottomLayout.invalidate();
+                    }
+                });
+                animator.start();
+            } else if (bottomLayout != null) {
                 bottomLayout.invalidate();
             }
         }
