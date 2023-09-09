@@ -163,6 +163,14 @@ public class PersistColorPalette {
         pendingChange.clear();
         pendingChange.addAll(DEFAULT_MODIFIABLE_COLORS);
         hiddenColor = null;
+        SharedPreferences.Editor editor = mConfig.edit();
+        for (int i = 0; i < Brush.BRUSHES_LIST.size(); i++) {
+            editor.remove("brush_color_" + i);
+        }
+        editor.remove("brush_color_" + BRUSH_TEXT);
+        brushColor.clear();
+        editor.apply();
+
         saveColors();
     }
 
