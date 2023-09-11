@@ -314,6 +314,7 @@
     <string name="ArchiveHintHeader3">Pinned chats</string>
     <string name="ArchiveHintText3">You can pin an unlimited number of archived chats to the top.</string>
     <string name="ScheduledOrNoSoundHint">Hold this button to schedule your message or send it without sound.</string>
+    <string name="ScheduledHint">Long tap to send your message later.</string>
     <string name="HideNewChatsAlertTitle">Hide new chats?</string>
     <string name="HideNewChatsAlertText">You are receiving many new chats from users who are not in your Contacts List. Do you want have such chats **automatically muted** and **archived**?</string>
     <string name="GoToSettings">GO TO SETTINGS</string>

@@ -467,6 +467,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private HintView mediaBanTooltip;
     private HintView searchAsListHint;
     private HintView scheduledOrNoSoundHint;
+    private boolean scheduledOrNoSoundHintShown;
+    private HintView scheduledHint;
+    private boolean scheduledHintShown;
     private boolean searchAsListHintShown;
     private HintView fwdRestrictedTopHint;
     private HintView fwdRestrictedBottomHint;
@@ -1798,6 +1801,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 emojiAnimationsOverlay.cancelAllAnimations();
             }
             ReactionsEffectOverlay.dismissAll();
+            if (TextUtils.isEmpty(text)) {
+                hideSendButtonHints();
+                AndroidUtilities.cancelRunOnUIThread(showScheduledHintRunnable);
+            } else if (!bigChange){
+                showScheduledHint();
+            }
         }
 
         @Override
@@ -1991,8 +2000,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public void onSendLongClick() {
-            if (scheduledOrNoSoundHint != null) {
+            if (scheduledOrNoSoundHint != null && scheduledOrNoSoundHint.isShowing()) {
+                SharedConfig.setScheduledOrNoSoundHintShowed(3);
                 scheduledOrNoSoundHint.hide();
+            }
+            if (scheduledHint != null && scheduledHint.isShowing()) {
+                SharedConfig.setScheduledHintShowed(3);
+                scheduledHint.hide();
             }
         }
 
@@ -2059,16 +2073,38 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (anchor == null || chatActivityEnterView.getEditField() == null || chatActivityEnterView.getEditField().getText().length() < 5) {
             return;
         }
-        SharedConfig.increaseScheduledOrNoSuoundHintShowed();
+        SharedConfig.increaseScheduledOrNoSoundHintShowed();
         if (scheduledOrNoSoundHint == null) {
             scheduledOrNoSoundHint = new HintView(getParentActivity(), 4, themeDelegate);
-            scheduledOrNoSoundHint.setShowingDuration(5000);
+            scheduledOrNoSoundHint.createCloseButton();
             scheduledOrNoSoundHint.setAlpha(0);
             scheduledOrNoSoundHint.setVisibility(View.INVISIBLE);
             scheduledOrNoSoundHint.setText(LocaleController.getString("ScheduledOrNoSoundHint", R.string.ScheduledOrNoSoundHint));
             contentView.addView(scheduledOrNoSoundHint, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 10, 0, 10, 0));
         }
         scheduledOrNoSoundHint.showForView(anchor, true);
+        scheduledOrNoSoundHintShown = true;
+    };
+
+    private final Runnable showScheduledHintRunnable = () -> {
+        if (getParentActivity() == null || fragmentView == null || chatActivityEnterView == null) {
+            return;
+        }
+        View anchor = chatActivityEnterView.getSendButton();
+        if (anchor == null || chatActivityEnterView.getEditField() == null || chatActivityEnterView.getEditField().getText().length() == 0) {
+            return;
+        }
+        SharedConfig.increaseScheduledHintShowed();
+        if (scheduledHint == null) {
+            scheduledHint = new HintView(getParentActivity(), 4, themeDelegate);
+            scheduledHint.createCloseButton();
+            scheduledHint.setAlpha(0);
+            scheduledHint.setVisibility(View.INVISIBLE);
+            scheduledHint.setText(LocaleController.getString("ScheduledHint", R.string.ScheduledHint));
+            contentView.addView(scheduledHint, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 10, 0, 10, 0));
+        }
+        scheduledHint.showForView(anchor, true);
+        scheduledHintShown = true;
     };
 
     public ChatActivity(Bundle args) {
@@ -2807,6 +2843,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             selectedMessagesCanStarIds[a].clear();
         }
         scheduledOrNoSoundHint = null;
+        scheduledHint = null;
         infoTopView = null;
         aspectRatioFrameLayout = null;
         videoTextureView = null;
@@ -9828,6 +9865,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (scheduledOrNoSoundHint != null) {
                 scheduledOrNoSoundHint.hide();
             }
+            if (scheduledHint != null) {
+                scheduledHint.hide();
+            }
         }
         if (fwdRestrictedBottomHint != null) {
             fwdRestrictedBottomHint.hide();
@@ -9849,6 +9889,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         if (checksHintView != null) {
             checksHintView.hide();
+        }
+    }
+
+    private void hideSendButtonHints() {
+        if (scheduledOrNoSoundHint != null) {
+            scheduledOrNoSoundHint.hide();
+        }
+        if (scheduledHint != null) {
+            scheduledHint.hide();
         }
     }
 
@@ -9901,9 +9950,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         searchAsListHint.showForView(searchCountText, true);
     }
 
+    private void showScheduledHint() {
+        boolean disableNoSound = (UserObject.isUserSelf(currentUser) || (chatInfo != null && chatInfo.slowmode_next_send_date > 0) && chatMode == 0);
+        if (scheduledHintShown || scheduledOrNoSoundHintShown || disableNoSound || SharedConfig.scheduledHintShows >= 3) {
+            return;
+        }
+        AndroidUtilities.cancelRunOnUIThread(showScheduledHintRunnable);
+        AndroidUtilities.runOnUIThread(showScheduledHintRunnable, 4000);
+    }
+
     private void showScheduledOrNoSoundHint() {
         boolean disableNoSound = (UserObject.isUserSelf(currentUser) || (chatInfo != null && chatInfo.slowmode_next_send_date > 0) && chatMode == 0);
-        if (SharedConfig.scheduledOrNoSoundHintShows >= 3 || System.currentTimeMillis() % 4 != 0 || disableNoSound) {
+        long scheduledOrNoSoundHintTimeFromLastSeen = System.currentTimeMillis() - SharedConfig.scheduledOrNoSoundHintSeenAt;
+        long scheduledHintTimeFromLastSeen = System.currentTimeMillis() - SharedConfig.scheduledHintSeenAt;
+        if (disableNoSound || SharedConfig.scheduledOrNoSoundHintShows >= 3 || scheduledOrNoSoundHintTimeFromLastSeen < 86400000L || scheduledHintTimeFromLastSeen < 86400000L) {
             return;
         }
         AndroidUtilities.cancelRunOnUIThread(showScheduledOrNoSoundRunnable);
@@ -13029,6 +13089,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             updateTextureViewPosition(false, false);
             updatePagedownButtonsPosition();
+            if (scheduledOrNoSoundHint != null && scheduledOrNoSoundHint.isShowing()) {
+                scheduledOrNoSoundHint.updatePosition();
+            }
+            if (scheduledHint != null && scheduledHint.isShowing()) {
+                scheduledHint.updatePosition();
+            }
             int restoreToCount = -1;
             if (switchingFromTopics) {
                 restoreToCount = canvas.saveLayerAlpha(0, actionBar.getBottom(), getMeasuredWidth(), getMeasuredHeight(), (int) (255 * switchingFromTopicsProgress), Canvas.ALL_SAVE_FLAG);
@@ -28972,6 +29038,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 AndroidUtilities.showKeyboard(searchItem.getSearchField());
                 removeKeyboardPositionBeforeTransition();
             }, 500);
+            hideSendButtonHints();
         }
 
         @Override
