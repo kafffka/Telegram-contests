@@ -896,26 +896,6 @@ public class SharedConfig {
         editor.apply();
     }
 
-    public static void setScheduledOrNoSoundHintShowed(int count) {
-        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        SharedPreferences.Editor editor = preferences.edit();
-        scheduledOrNoSoundHintShows = count;
-        scheduledOrNoSoundHintSeenAt = System.currentTimeMillis();
-        editor.putInt("scheduledOrNoSoundHintShows", scheduledOrNoSoundHintShows);
-        editor.putLong("scheduledOrNoSoundHintSeenAt", scheduledOrNoSoundHintSeenAt);
-        editor.apply();
-    }
-
-    public static void setScheduledHintShowed(int count) {
-        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        SharedPreferences.Editor editor = preferences.edit();
-        scheduledHintShows = count;
-        scheduledHintSeenAt = System.currentTimeMillis();
-        editor.putInt("scheduledHintShows", scheduledHintShows);
-        editor.putLong("scheduledHintSeenAt", scheduledHintSeenAt);
-        editor.apply();
-    }
-
     public static void increaseScheduledHintShowed() {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
@@ -937,6 +917,13 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt("scheduledOrNoSoundHintShows", 3);
+        editor.apply();
+    }
+
+    public static void removeScheduledHint() {
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt("scheduledHintShows", 3);
         editor.apply();
     }
 

@@ -2000,12 +2000,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         @Override
         public void onSendLongClick() {
-            if (scheduledOrNoSoundHint != null && scheduledOrNoSoundHint.isShowing()) {
-                SharedConfig.setScheduledOrNoSoundHintShowed(3);
+            if (scheduledOrNoSoundHint != null) {
                 scheduledOrNoSoundHint.hide();
             }
-            if (scheduledHint != null && scheduledHint.isShowing()) {
-                SharedConfig.setScheduledHintShowed(3);
+            if (scheduledHint != null) {
                 scheduledHint.hide();
             }
         }
