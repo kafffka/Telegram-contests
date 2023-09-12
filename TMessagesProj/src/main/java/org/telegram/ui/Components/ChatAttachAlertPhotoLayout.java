@@ -3509,18 +3509,18 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     }
 
     private void onPhotoEditModeChanged(boolean isEditMode) {
-        if (cameraView != null) {
-            if (isEditMode) {
+        if (isEditMode) {
+            if (cameraView != null) {
                 isCameraFrontfaceBeforeEnteringEditMode = cameraView.isFrontface();
                 hideCamera(true);
-            } else {
-                afterCameraInitRunnable = () -> {
-                    pauseCameraPreview();
-                    afterCameraInitRunnable = null;
-                    isCameraFrontfaceBeforeEnteringEditMode = null;
-                };
-                showCamera();
             }
+        } else {
+            afterCameraInitRunnable = () -> {
+                pauseCameraPreview();
+                afterCameraInitRunnable = null;
+                isCameraFrontfaceBeforeEnteringEditMode = null;
+            };
+            showCamera();
         }
     }
 
