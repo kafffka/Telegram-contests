@@ -14,24 +14,34 @@ import java.util.List;
 
 public class PersistColorPalette {
 
+    public final static int COLOR_BLACK = 0xff000000;
+    public final static int COLOR_WHITE = 0xffffffff;
+    public final static int COLOR_RED = 0xffff453a;
+    public final static int COLOR_ORANGE = 0xffff8a00;
+    public final static int COLOR_YELLOW = 0xffffd60a;
+    public final static int COLOR_GREEN = 0xff34c759;
+    public final static int COLOR_LIGHT_BLUE = 0xff63e6e2;
+    public final static int COLOR_BLUE = 0xff0a84ff;
+    public final static int COLOR_VIOLET = 0xffbf5af2;
+
     private final static List<Integer> DEFAULT_MODIFIABLE_COLORS = Arrays.asList(
             0xffD7A07C,
-            0xffAC734C,
-            0xff90512C,
-            0xff532E1F,
-            0xff818181
+            0xff7FDDEB,
+            0xffA58FDB,
+            0xffDB95AE,
+            0xffBADC9F
     );
 
     private final static List<Integer> PRESET_COLORS = Arrays.asList(
-            0xff000000,
-            0xffffffff,
-            0xffff453a,
-            0xffff8a00,
-            0xffffd60a,
-            0xff34c759,
-            0xff63e6e2,
-            0xff0a84ff,
-            0xffbf5af2
+            COLOR_RED,
+            COLOR_ORANGE,
+            COLOR_YELLOW,
+            COLOR_GREEN,
+            COLOR_LIGHT_BLUE,
+            COLOR_BLUE,
+            COLOR_VIOLET,
+            COLOR_BLACK,
+            COLOR_WHITE
     );
 
     public final static int MODIFIABLE_COLORS_COUNT = DEFAULT_MODIFIABLE_COLORS.size();
@@ -44,8 +54,8 @@ public class PersistColorPalette {
     private final SharedPreferences mConfig;
     private final List<Integer> colors = new ArrayList<>(COLORS_COUNT);
     private final HashMap<Integer, Integer> brushColor = new HashMap<>(Brush.BRUSHES_LIST.size());
-    private Integer hiddenColor = null;
     private List<Integer> pendingChange = new ArrayList<>(COLORS_COUNT);
+    private boolean needSaveBrushColor;
 
     private int currentBrush;
     private int currentAlignment;
@@ -145,7 +155,7 @@ public class PersistColorPalette {
 
         Integer color = brushColor.get(currentBrush);
         if (color != null) {
-            selectColor(color);
+            selectColor(color, false);
             saveColors();
         }
     }
@@ -162,7 +172,6 @@ public class PersistColorPalette {
     public void cleanup() {
         pendingChange.clear();
         pendingChange.addAll(DEFAULT_MODIFIABLE_COLORS);
-        hiddenColor = null;
         SharedPreferences.Editor editor = mConfig.edit();
         for (int i = 0; i < Brush.BRUSHES_LIST.size(); i++) {
             editor.remove("brush_color_" + i);
@@ -182,18 +191,41 @@ public class PersistColorPalette {
 
     public int getColor(int index) {
         checkIndex(index);
-        if (index >= colors.size()) {
-            if (index < MODIFIABLE_COLORS_COUNT) {
-                return DEFAULT_MODIFIABLE_COLORS.get(index);
+        List<Integer> allColors = getAllColors();
+        if (index >= allColors.size()) {
+            if (index < PRESET_COLORS_COUNT) {
+                return PRESET_COLORS.get(index);
             } else {
-                return PRESET_COLORS.get(index - MODIFIABLE_COLORS_COUNT);
+                return DEFAULT_MODIFIABLE_COLORS.get(index - PRESET_COLORS_COUNT);
             }
         }
-        return colors.get(index);
+        return allColors.get(index);
     }
 
     public int getCurrentColor() {
-        return (colors.size() > 0) ? colors.get(0) : DEFAULT_MODIFIABLE_COLORS.get(0);
+        Integer currentColor = brushColor.get(currentBrush);
+        if (currentColor == null) {
+            currentColor = (int) mConfig.getLong("brush_color_" + currentBrush, Brush.BRUSHES_LIST.get(currentBrush).getDefaultColor());
+            brushColor.put(currentBrush, currentColor);
+        }
+        return currentColor;
+    }
+
+    public int getCurrentColorPosition() {
+        int currentColor = getCurrentColor();
+        List<Integer> allColors = getAllColors();
+        for (int i = 0; i < allColors.size(); i++) {
+            if (allColors.get(i) == currentColor) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private List<Integer> getAllColors() {
+        List<Integer> allColors = new ArrayList<>(PRESET_COLORS);
+        allColors.addAll(colors);
+        return allColors;
     }
 
     public void selectColor(int color) {
@@ -201,102 +233,52 @@ public class PersistColorPalette {
     }
 
     public void selectColor(int color, boolean updateBrush) {
-        int i = colors.indexOf(color);
+        List<Integer> allColors = getAllColors();
+        int i = allColors.indexOf(color);
         if (i != -1) {
-            selectColorIndex(i);
+            if (updateBrush) {
+                setCurrentBrushColorByColorIndex(i);
+            }
         } else {
-            int prevColor = getCurrentColor();
             List<Integer> from = new ArrayList<>(pendingChange.isEmpty() ? colors : pendingChange);
-            if (hiddenColor != null && hiddenColor == color) {
-                hiddenColor = null;
-            }
-            if (hiddenColor != null && PRESET_COLORS.contains(prevColor) && !PRESET_COLORS.contains(color)) {
-                from.add(hiddenColor);
-                hiddenColor = null;
-            }
             pendingChange.clear();
             pendingChange.add(color);
-            for (int j = 0; j < from.size(); j++) {
-                // don't add preset colors to the recent colors
-                if (!PRESET_COLORS.contains(from.get(j))) {
-                    pendingChange.add(from.get(j));
-                }
+
+            for (int j = 0; j < from.size() - 1; j++) {
+                pendingChange.add(from.get(j));
             }
+
             if (pendingChange.size() < DEFAULT_MODIFIABLE_COLORS.size()) {
                 for (int j = pendingChange.size(); j < DEFAULT_MODIFIABLE_COLORS.size(); ++j) {
                     pendingChange.add(DEFAULT_MODIFIABLE_COLORS.get(j));
                 }
             } else if (pendingChange.size() > DEFAULT_MODIFIABLE_COLORS.size()) {
-                if (PRESET_COLORS.contains(color)) {
-                    hiddenColor = pendingChange.get(pendingChange.size() - 1);
-                }
                 pendingChange = pendingChange.subList(0, DEFAULT_MODIFIABLE_COLORS.size());
             }
             if (updateBrush) {
                 brushColor.put(currentBrush, color);
+                needSaveBrushColor = true;
             }
         }
     }
 
-    public void selectColorIndex(int index) {
-        selectColorIndex(index, true);
-    }
-
-    public void selectColorIndex(int index, boolean updateBrush) {
-        int prevColor = getCurrentColor();
-        int color = index < 0 || index >= colors.size() ? DEFAULT_MODIFIABLE_COLORS.get(index) : colors.get(index);
-
-        List<Integer> from = new ArrayList<>(pendingChange.isEmpty() ? colors : pendingChange);
-        if (hiddenColor != null && hiddenColor == color) {
-            hiddenColor = null;
-        }
-        if (hiddenColor != null && PRESET_COLORS.contains(prevColor) && !PRESET_COLORS.contains(color)) {
-            from.add(hiddenColor);
-            hiddenColor = null;
-        }
-        pendingChange.clear();
-        pendingChange.add(color);
-        for (int i = 0; i < from.size(); i++) {
-            // don't add preset colors to the recent colors
-           if (from.get(i) != color && !PRESET_COLORS.contains(from.get(i))) {
-                pendingChange.add(from.get(i));
-            }
-        }
-        if (pendingChange.size() < DEFAULT_MODIFIABLE_COLORS.size()) {
-            for (int j = pendingChange.size(); j < DEFAULT_MODIFIABLE_COLORS.size(); ++j) {
-                pendingChange.add(DEFAULT_MODIFIABLE_COLORS.get(j));
-            }
-        } else if (pendingChange.size() > DEFAULT_MODIFIABLE_COLORS.size()) {
-            if (PRESET_COLORS.contains(color)) {
-                hiddenColor = pendingChange.get(pendingChange.size() - 1);
-            } else {
-                hiddenColor = null;
-            }
-            pendingChange = pendingChange.subList(0, DEFAULT_MODIFIABLE_COLORS.size());
-        }
-        if (updateBrush) {
-            brushColor.put(currentBrush, color);
-        }
+    public void setCurrentBrushColorByColorIndex(int index) {
+        int color = getColor(index);
+        brushColor.put(currentBrush, color);
+        needSaveBrushColor = true;
     }
 
     private void loadColors() {
         for (int i = 0; i < MODIFIABLE_COLORS_COUNT; i++) {
             colors.add((int) mConfig.getLong("color_" + i, DEFAULT_MODIFIABLE_COLORS.get(i)));
         }
-        for (int i = 0; i < PRESET_COLORS_COUNT; i++) {
-            colors.add(PRESET_COLORS.get(i));
-        }
-
-        if (mConfig.contains("color_" + MODIFIABLE_COLORS_COUNT + 1)) {
-            hiddenColor = (int) mConfig.getLong("color_" + MODIFIABLE_COLORS_COUNT + 1, 0);
-        }
 
         for (int i = 0; i < Brush.BRUSHES_LIST.size(); i++) {
-            int color = (int) mConfig.getLong("brush_color_" + i, colors.get(0));
+            int color = (int) mConfig.getLong("brush_color_" + i, Brush.BRUSHES_LIST.get(i).getDefaultColor());
             brushColor.put(i, color);
         }
 
-        int color = (int) mConfig.getLong("brush_color_" + BRUSH_TEXT, colors.get(0));
+        int color = (int) mConfig.getLong("brush_color_" + BRUSH_TEXT, COLOR_BLACK);
         brushColor.put(BRUSH_TEXT, color);
     }
 
@@ -305,29 +287,27 @@ public class PersistColorPalette {
     }
 
     public void saveColors() {
-        if (pendingChange.isEmpty()) {
+        if (pendingChange.isEmpty() && !needSaveBrushColor) {
             return;
         }
-
         SharedPreferences.Editor editor = mConfig.edit();
-        for (int i = 0; i < MODIFIABLE_COLORS_COUNT; i++) {
-            editor.putLong("color_" + i, i < pendingChange.size() ? pendingChange.get(i) : (long) DEFAULT_MODIFIABLE_COLORS.get(i));
-        }
-        if (hiddenColor != null) {
-            editor.putLong("color_" + MODIFIABLE_COLORS_COUNT + 1, hiddenColor);
-        } else {
-            editor.remove("color_" + MODIFIABLE_COLORS_COUNT + 1);
+        if (!pendingChange.isEmpty()) {
+            for (int i = 0; i < MODIFIABLE_COLORS_COUNT; i++) {
+                editor.putLong("color_" + i, i < pendingChange.size() ? pendingChange.get(i) : (long) DEFAULT_MODIFIABLE_COLORS.get(i));
+            }
+
+            colors.clear();
+            colors.addAll(pendingChange);
+            pendingChange.clear();
         }
 
-        Integer currentBrushColor = brushColor.get(currentBrush);
-        if (currentBrushColor != null) {
-            editor.putLong("brush_color_" + currentBrush, currentBrushColor);
+        if (needSaveBrushColor) {
+            Integer currentBrushColor = brushColor.get(currentBrush);
+            if (currentBrushColor != null) {
+                editor.putLong("brush_color_" + currentBrush, currentBrushColor);
+            }
+            needSaveBrushColor = false;
         }
         editor.apply();
-
-        colors.clear();
-        colors.addAll(pendingChange);
-        colors.addAll(PRESET_COLORS);
-        pendingChange.clear();
     }
 }
