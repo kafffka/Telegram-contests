@@ -26,7 +26,7 @@ public class PersistColorPalette {
 
     private final static List<Integer> DEFAULT_MODIFIABLE_COLORS = Arrays.asList(
             0xffD7A07C,
-            0xff7FDDEB,
+            0xff7faffe,
             0xffA58FDB,
             0xffDB95AE,
             0xffBADC9F
@@ -205,7 +205,7 @@ public class PersistColorPalette {
     public int getCurrentColor() {
         Integer currentColor = brushColor.get(currentBrush);
         if (currentColor == null) {
-            currentColor = (int) mConfig.getLong("brush_color_" + currentBrush, Brush.BRUSHES_LIST.get(currentBrush).getDefaultColor());
+            currentColor = (int) mConfig.getLong("brush_color_" + currentBrush, currentBrush == BRUSH_TEXT ? COLOR_WHITE : Brush.BRUSHES_LIST.get(currentBrush).getDefaultColor());
             brushColor.put(currentBrush, currentColor);
         }
         return currentColor;
@@ -278,7 +278,7 @@ public class PersistColorPalette {
             brushColor.put(i, color);
         }
 
-        int color = (int) mConfig.getLong("brush_color_" + BRUSH_TEXT, COLOR_BLACK);
+        int color = (int) mConfig.getLong("brush_color_" + BRUSH_TEXT, COLOR_WHITE);
         brushColor.put(BRUSH_TEXT, color);
     }
 
