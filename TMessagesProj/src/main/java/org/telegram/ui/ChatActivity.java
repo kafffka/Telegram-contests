@@ -4931,9 +4931,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             }
                         }
                         float tx = cell.getSlidingOffsetX() + cell.getCheckBoxTranslation();
-
                         int y = (int) ((replaceAnimation ? child.getTop() : child.getY()) + cell.getLayoutHeight() + cell.getTransitionParams().deltaBottom);
                         int maxY = chatListView.getMeasuredHeight() - chatListView.getPaddingBottom();
+                        boolean canUpdateTx = cell.isCheckBoxVisible() && tx == 0;
                         if (cell.isPlayingRound() || cell.getTransitionParams().animatePlayingRound) {
                             if (cell.getTransitionParams().animatePlayingRound) {
                                 float progressLocal = cell.getTransitionParams().animateChangeProgress;
@@ -5000,8 +5000,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                             top = view.getTop();
                                             if (view instanceof ChatMessageCell) {
                                                 cell = (ChatMessageCell) view;
-                                                if (cell.getSlidingOffsetX() + cell.getCheckBoxTranslation() > tx) {
-                                                    tx = cell.getSlidingOffsetX() + cell.getCheckBoxTranslation();
+                                                float newTx = cell.getSlidingOffsetX() + cell.getCheckBoxTranslation();
+                                                if (canUpdateTx && newTx > 0) {
+                                                    tx = newTx;
                                                 }
                                                 if (!cell.drawPinnedTop()) {
                                                     break;
@@ -5020,8 +5021,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                             top = holder.itemView.getTop();
                                             if (holder.itemView instanceof ChatMessageCell) {
                                                 cell = (ChatMessageCell) holder.itemView;
-                                                if (cell.getSlidingOffsetX() + cell.getCheckBoxTranslation() > tx) {
-                                                    tx = cell.getSlidingOffsetX() + cell.getCheckBoxTranslation();
+                                                float newTx = cell.getSlidingOffsetX() + cell.getCheckBoxTranslation();
+                                                if (canUpdateTx && newTx > 0) {
+                                                    tx = newTx;
                                                 }
                                                 if (!cell.drawPinnedTop()) {
                                                     break;
