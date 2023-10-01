@@ -9992,7 +9992,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private void showScheduledHint() {
         boolean disableNoSound = (UserObject.isUserSelf(currentUser) || (chatInfo != null && chatInfo.slowmode_next_send_date > 0) && chatMode == 0);
-        if (scheduledHintShown || scheduledOrNoSoundHintShown || disableNoSound || SharedConfig.scheduledHintShows >= 3) {
+        if (scheduledHintShown || scheduledOrNoSoundHintShown || disableNoSound || SharedConfig.scheduledHintShows >= 3 || chatActivityEnterView.isEditingMessage()) {
             return;
         }
         AndroidUtilities.cancelRunOnUIThread(showScheduledHintRunnable);
@@ -10003,7 +10003,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         boolean disableNoSound = (UserObject.isUserSelf(currentUser) || (chatInfo != null && chatInfo.slowmode_next_send_date > 0) && chatMode == 0);
         long scheduledOrNoSoundHintTimeFromLastSeen = System.currentTimeMillis() - SharedConfig.scheduledOrNoSoundHintSeenAt;
         long scheduledHintTimeFromLastSeen = System.currentTimeMillis() - SharedConfig.scheduledHintSeenAt;
-        if (disableNoSound || SharedConfig.scheduledOrNoSoundHintShows >= 3 || scheduledOrNoSoundHintTimeFromLastSeen < 86400000L || scheduledHintTimeFromLastSeen < 86400000L) {
+        if (disableNoSound || SharedConfig.scheduledOrNoSoundHintShows >= 3 || scheduledOrNoSoundHintTimeFromLastSeen < 86400000L || scheduledHintTimeFromLastSeen < 86400000L || chatActivityEnterView.isEditingMessage()) {
             return;
         }
         AndroidUtilities.cancelRunOnUIThread(showScheduledOrNoSoundRunnable);
