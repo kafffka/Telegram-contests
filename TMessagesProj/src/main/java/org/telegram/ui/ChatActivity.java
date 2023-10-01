@@ -15060,13 +15060,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             @Override
             public void onCaptionChanged(CharSequence caption) {
                 if (editingMessageObject == object) {
-                    chatActivityEnterView.setFieldText(caption, true, false);
+                    chatActivityEnterView.setFieldText(caption, true);
                 }
             }
 
             @Override
             public void onApplyCaption(CharSequence caption) {
-                chatActivityEnterView.setFieldText(caption, true, false);
+                chatActivityEnterView.setFieldText(caption, true);
             }
 
             @Override
@@ -23041,7 +23041,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     message = draftMessage.message;
                 }
 
-                chatActivityEnterView.setFieldDraftText(message);
+                chatActivityEnterView.setFieldText(message, true, true);
                 if (getArguments().getBoolean("hasUrl", false)) {
                     chatActivityEnterView.setSelection(draftMessage.message.indexOf('\n') + 1);
                     AndroidUtilities.runOnUIThread(() -> {

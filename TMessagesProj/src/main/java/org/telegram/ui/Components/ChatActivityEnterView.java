@@ -7746,8 +7746,8 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         setFieldText(text, true, false);
     }
 
-    public void setFieldDraftText(CharSequence text) {
-        setFieldText(text, true, true);
+    public void setFieldText(CharSequence text, boolean ignoreChange) {
+        setFieldText(text, ignoreChange, false);
     }
 
     public void setFieldText(CharSequence text, boolean ignoreChange, boolean fromDraft) {
