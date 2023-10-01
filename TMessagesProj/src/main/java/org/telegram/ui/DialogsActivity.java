@@ -4626,7 +4626,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
 
                 @Override
-                public void onTextChanged(final CharSequence text, boolean bigChange) {
+                public void onTextChanged(final CharSequence text, boolean bigChange, boolean fromDraft) {
 
                 }
 

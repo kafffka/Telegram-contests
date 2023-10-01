@@ -213,7 +213,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
 
         void needSendTyping();
 
-        void onTextChanged(CharSequence text, boolean bigChange);
+        void onTextChanged(CharSequence text, boolean bigChange, boolean fromDraft);
 
         void onTextSelectionChanged(int start, int end);
 
@@ -4314,7 +4314,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                         if (before > count + 1 || (count - before) > 2 || TextUtils.isEmpty(charSequence)) {
                             messageWebPageSearch = true;
                         }
-                        delegate.onTextChanged(charSequence, before > count + 1 || (count - before) > 2);
+                        delegate.onTextChanged(charSequence, before > count + 1 || (count - before) > 2, false);
                     }
                 }
                 if (innerTextChange != 2 && (count - before) > 1) {
@@ -7387,7 +7387,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             messageEditText.setSelection(messageEditText.getText().length());
             ignoreTextChange = false;
             if (delegate != null) {
-                delegate.onTextChanged(messageEditText.getText(), true);
+                delegate.onTextChanged(messageEditText.getText(), true, false);
             }
             if (!keyboardVisible && currentPopupContentType == -1) {
                 openKeyboard();
@@ -7743,10 +7743,14 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     }
 
     public void setFieldText(CharSequence text) {
-        setFieldText(text, true);
+        setFieldText(text, true, false);
     }
 
-    public void setFieldText(CharSequence text, boolean ignoreChange) {
+    public void setFieldDraftText(CharSequence text) {
+        setFieldText(text, true, true);
+    }
+
+    public void setFieldText(CharSequence text, boolean ignoreChange, boolean fromDraft) {
         if (messageEditText == null) {
             return;
         }
@@ -7755,7 +7759,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         messageEditText.setSelection(messageEditText.getText().length());
         ignoreTextChange = false;
         if (ignoreChange && delegate != null) {
-            delegate.onTextChanged(messageEditText.getText(), true);
+            delegate.onTextChanged(messageEditText.getText(), true, fromDraft);
         }
     }
 

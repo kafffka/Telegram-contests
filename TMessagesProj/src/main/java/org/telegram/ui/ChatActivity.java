@@ -1786,7 +1786,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
 
         @Override
-        public void onTextChanged(final CharSequence text, boolean bigChange) {
+        public void onTextChanged(final CharSequence text, boolean bigChange, boolean fromDraft) {
             MediaController.getInstance().setInputFieldHasText(!TextUtils.isEmpty(text) || chatActivityEnterView.isEditingMessage());
             if (mentionContainer != null && mentionContainer.getAdapter() != null) {
                 mentionContainer.getAdapter().searchUsernameOrHashtag(text, chatActivityEnterView.getCursorPosition(), messages, false, false);
@@ -1815,11 +1815,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 emojiAnimationsOverlay.cancelAllAnimations();
             }
             ReactionsEffectOverlay.dismissAll();
-            if (TextUtils.isEmpty(text)) {
-                hideSendButtonHints();
-                AndroidUtilities.cancelRunOnUIThread(showScheduledHintRunnable);
-            } else if (!bigChange){
-                showScheduledHint();
+            if (!fromDraft) {
+                if ((scheduledOrNoSoundHint != null && scheduledOrNoSoundHint.getVisibility() == View.VISIBLE)
+                        || (scheduledHint != null && scheduledHint.getVisibility() == View.VISIBLE)) {
+                    hideSendButtonHints();
+                } else {
+                    showScheduledHint();
+                }
             }
         }
 
@@ -15058,13 +15060,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             @Override
             public void onCaptionChanged(CharSequence caption) {
                 if (editingMessageObject == object) {
-                    chatActivityEnterView.setFieldText(caption, true);
+                    chatActivityEnterView.setFieldText(caption, true, false);
                 }
             }
 
             @Override
             public void onApplyCaption(CharSequence caption) {
-                chatActivityEnterView.setFieldText(caption, true);
+                chatActivityEnterView.setFieldText(caption, true, false);
             }
 
             @Override
@@ -23039,7 +23041,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     message = draftMessage.message;
                 }
 
-                chatActivityEnterView.setFieldText(message);
+                chatActivityEnterView.setFieldDraftText(message);
                 if (getArguments().getBoolean("hasUrl", false)) {
                     chatActivityEnterView.setSelection(draftMessage.message.indexOf('\n') + 1);
                     AndroidUtilities.runOnUIThread(() -> {

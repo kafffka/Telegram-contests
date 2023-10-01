@@ -1929,7 +1929,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             }
 
             @Override
-            public void onTextChanged(CharSequence text, boolean bigChange) {
+            public void onTextChanged(CharSequence text, boolean bigChange, boolean fromDraft) {
                 if (mentionContainer == null) {
                     createMentionsContainer();
                 }
