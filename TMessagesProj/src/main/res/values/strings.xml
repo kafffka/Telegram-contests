@@ -7246,4 +7246,15 @@
     <string name="BoostStories_many">**%d**&#160;stories</string>
     <string name="BoostStories_other">**%d**&#160;stories</string>
     <string name="BoostingIncreaseLevel">Increase Story Limit</string>
+    <string name="StoriesIntroHeader">Watching Stories</string>
+    <string name="StoriesIntroSubHeader">You can use these gestures\nto control playback.</string>
+    <string name="StoriesIntroDismiss">Tap to keep watching</string>
+    <string name="StoriesIntroGoForwardHeader">Go forward</string>
+    <string name="StoriesIntroGoForwardSubHeader">Tap the screen</string>
+    <string name="StoriesIntroPauseAndSeekHeader">Pause and Seek</string>
+    <string name="StoriesIntroPauseAndSeekSubHeader">Hold and move sideways</string>
+    <string name="StoriesIntroGoBackHeader">Go Back</string>
+    <string name="StoriesIntroGoBackSubHeader">Tap the left edge</string>
+    <string name="StoriesIntroGoToNextAuthorHeader">Go to Next Author</string>
+    <string name="StoriesIntroGoToNextAuthorSubHeader">Swipe left or right</string>
 </resources>

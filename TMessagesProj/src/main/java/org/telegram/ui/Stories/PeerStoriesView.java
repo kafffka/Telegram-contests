@@ -3475,7 +3475,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
 
         MessagesController.getInstance(currentAccount).getTranslateController().detectStoryLanguage(currentStory.storyItem);
 
-        if (!preload && !isSelf && reactionsTooltipRunnable == null && !SharedConfig.storyReactionsLongPressHint) {
+        if (!preload && !isSelf && reactionsTooltipRunnable == null && !SharedConfig.storyReactionsLongPressHint && SharedConfig.storiesIntroShown) {
             AndroidUtilities.runOnUIThread(reactionsTooltipRunnable = () -> {
                 if (!storyViewer.isShown()) {
                     return;

@@ -3526,6 +3526,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 SharedConfig.stealthModeSendMessageConfirm = 2;
                                 SharedConfig.updateStealthModeSendMessageConfirm(2);
                                 SharedConfig.setStoriesReactionsLongPressHintUsed(false);
+                                SharedConfig.setStoriesIntroShown(false);
                                 ChatThemeController.getInstance(currentAccount).clearCache();
                                 getNotificationCenter().postNotificationName(NotificationCenter.newSuggestionsAvailable);
                                 RestrictedLanguagesSelectActivity.cleanup();
