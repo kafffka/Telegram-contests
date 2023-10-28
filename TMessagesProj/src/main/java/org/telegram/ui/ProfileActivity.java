@@ -11080,6 +11080,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         } catch (Exception e) {}
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private void openAddToContact(TLRPC.User user, Bundle args) {
         ContactAddActivity contactAddActivity = new ContactAddActivity(args, resourcesProvider);
         contactAddActivity.setDelegate(() -> {
@@ -11087,7 +11088,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (currentAddToContactsRow >= 0) {
                 if (sharedMediaRow == -1) {
                     updateRowsIds();
-                    listAdapter.notifyItemRangeRemoved(currentAddToContactsRow, 2);
+                    listAdapter.notifyDataSetChanged();
                 } else {
                     updateListAnimated(false);
                 }
