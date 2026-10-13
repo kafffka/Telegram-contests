@@ -6399,6 +6399,9 @@ public class MessagesController extends BaseController implements NotificationCe
                 uploadingWallpaperInfo.uploadingProgress = loadedSize / (float) totalSize;
             }
         } else if (id == NotificationCenter.messageReceivedByServer) {
+            if (!(args[2] instanceof TLRPC.Message) || MessageObject.isRoundVideoMessage((TLRPC.Message) args[2])) {
+                VideoShape.onMessageIdChanged(currentAccount, (Long) args[3], (Integer) args[0], (Integer) args[1]);
+            }
             Boolean scheduled = (Boolean) args[6];
             if (scheduled) {
                 return;

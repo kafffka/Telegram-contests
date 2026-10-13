@@ -48,6 +48,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.VideoShape;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -80,6 +81,42 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
     public class PipFrameLayout extends FrameLayout {
         public PipFrameLayout(Context context) {
             super(context);
+        }
+    }
+
+    private VideoShapeDrawer shapeDrawer;
+    private boolean shaped;
+
+    /** Follows the playing message's shape (render-only, see VideoShape). */
+    private void updateVideoShape() {
+        MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+        int shape = messageObject != null && Build.VERSION.SDK_INT >= 21 ? messageObject.videoShape : VideoShape.CIRCLE;
+        boolean nowShaped = shape != VideoShape.CIRCLE;
+        if (nowShaped && shapeDrawer == null) {
+            shapeDrawer = new VideoShapeDrawer(() -> {
+                if (windowView != null) windowView.invalidate();
+                if (aspectRatioFrameLayout != null) aspectRatioFrameLayout.invalidate();
+            });
+            shapeDrawer.setLive(true);
+        }
+        if (shapeDrawer != null) {
+            shapeDrawer.setShape(shape, false);
+        }
+        if (nowShaped != shaped) {
+            shaped = nowShaped;
+            if (aspectRatioFrameLayout != null) {
+                aspectRatioFrameLayout.invalidateOutline();
+            }
+            if (windowView != null) {
+                windowView.invalidate();
+            }
+        }
+        if (textureView != null) {
+            float zoom = nowShaped ? VideoShape.contentZoom(messageObject) : 1f;
+            if (textureView.getScaleX() != zoom) {
+                textureView.setScaleX(zoom);
+                textureView.setScaleY(zoom);
+            }
         }
     }
 
@@ -174,7 +211,15 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
 
             @Override
             protected void onDraw(Canvas canvas) {
-                if (Theme.chat_roundVideoShadow != null/* && aspectRatioFrameLayout.isDrawingReady()*/) {
+                if (shaped) {
+                    AndroidUtilities.rectTmp.set(AndroidUtilities.dp(3), AndroidUtilities.dp(3), AndroidUtilities.dp(123), AndroidUtilities.dp(123));
+                    shapeDrawer.drawShadow(canvas, AndroidUtilities.rectTmp, (int) (getAlpha() * 255));
+                    final int wasColor = Theme.chat_docBackPaint.getColor();
+                    Theme.chat_docBackPaint.setColor(Theme.getColor(Theme.key_chat_inBubble));
+                    Theme.chat_docBackPaint.setAlpha((int) (getAlpha() * 255));
+                    canvas.drawPath(shapeDrawer.getPath(AndroidUtilities.rectTmp), Theme.chat_docBackPaint);
+                    Theme.chat_docBackPaint.setColor(wasColor);
+                } else if (Theme.chat_roundVideoShadow != null/* && aspectRatioFrameLayout.isDrawingReady()*/) {
                     Theme.chat_roundVideoShadow.setAlpha((int) (getAlpha() * 255));
                     Theme.chat_roundVideoShadow.setBounds(AndroidUtilities.dp(1), AndroidUtilities.dp(2), AndroidUtilities.dp(125), AndroidUtilities.dp(125));
                     Theme.chat_roundVideoShadow.draw(canvas);
@@ -193,13 +238,30 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
         if (Build.VERSION.SDK_INT >= 21) {
             aspectRatioFrameLayout = new AspectRatioFrameLayout(activity) {
                 @Override
+                protected void dispatchDraw(Canvas canvas) {
+                    if (!shaped) {
+                        super.dispatchDraw(canvas);
+                        return;
+                    }
+                    canvas.save();
+                    shapeDrawer.clip(canvas, 0, 0, getMeasuredWidth(), getMeasuredHeight());
+                    super.dispatchDraw(canvas);
+                    canvas.restore();
+                }
+
+                @Override
                 protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
                     boolean result = super.drawChild(canvas, child, drawingTime);
                     if (child == textureView) {
                         MessageObject currentMessageObject = MediaController.getInstance().getPlayingMessageObject();
                         if (currentMessageObject != null) {
                             rect.set(AndroidUtilities.dpf2(1.5f), AndroidUtilities.dpf2(1.5f), getMeasuredWidth() - AndroidUtilities.dpf2(1.5f), getMeasuredHeight() - AndroidUtilities.dpf2(1.5f));
-                            canvas.drawArc(rect, -90, 360 * currentMessageObject.audioProgress, false, Theme.chat_radialProgressPaint);
+                            if (shaped) {
+                                AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                                shapeDrawer.drawProgress(canvas, AndroidUtilities.rectTmp, -AndroidUtilities.dpf2(1.5f), currentMessageObject.audioProgress, Theme.chat_radialProgressPaint);
+                            } else {
+                                canvas.drawArc(rect, -90, 360 * currentMessageObject.audioProgress, false, Theme.chat_radialProgressPaint);
+                            }
                         }
                     }
                     return result;
@@ -209,7 +271,11 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
                 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
                 @Override
                 public void getOutline(View view, Outline outline) {
-                    outline.setOval(0, 0, AndroidUtilities.dp(120), AndroidUtilities.dp(120));
+                    if (shaped) {
+                        outline.setRect(0, 0, AndroidUtilities.dp(120), AndroidUtilities.dp(120));
+                    } else {
+                        outline.setOval(0, 0, AndroidUtilities.dp(120), AndroidUtilities.dp(120));
+                    }
                 }
             });
             aspectRatioFrameLayout.setClipToOutline(true);
@@ -299,6 +365,8 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
         parentActivity = activity;
         currentAccount = UserConfig.selectedAccount;
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidStart);
+        updateVideoShape();
         runShowHideAnimation(true);
     }
 
@@ -329,6 +397,8 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
             if (aspectRatioFrameLayout != null) {
                 aspectRatioFrameLayout.invalidate();
             }
+        } else if (id == NotificationCenter.messagePlayingDidStart) {
+            updateVideoShape();
         }
     }
 
@@ -372,6 +442,7 @@ public class PipRoundVideoView implements NotificationCenter.NotificationCenterD
             }
             parentActivity = null;
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidStart);
         }
     }
 

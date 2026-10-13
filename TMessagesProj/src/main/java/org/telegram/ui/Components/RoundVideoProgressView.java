@@ -25,6 +25,9 @@ public final class RoundVideoProgressView extends FrameLayout {
     private final float ringInset;
 
     private float progress;
+    private VideoShapeDrawer shapeDrawer;
+    private float shapeInset;
+    private final RectF shapeBounds = new RectF();
 
     /** Creates a round-video progress view matching the legacy camera ring. */
     public RoundVideoProgressView(Context context) {
@@ -39,6 +42,13 @@ public final class RoundVideoProgressView extends FrameLayout {
     /** Returns the paint controlling the whole ring opacity. */
     public Paint getPaint() {
         return progressPaint;
+    }
+
+    /** Draws the ring along the shape outline while the shape is not a settled circle. */
+    public void setShapeDrawer(VideoShapeDrawer shapeDrawer, float maskInset) {
+        this.shapeDrawer = shapeDrawer;
+        this.shapeInset = maskInset;
+        invalidate();
     }
 
     /** Sets normalized recorded progress. */
@@ -58,6 +68,12 @@ public final class RoundVideoProgressView extends FrameLayout {
                 getWidth() - ringInset,
                 getHeight() - ringInset
         );
+        if (shapeDrawer != null && !shapeDrawer.isCircle()) {
+            shapeBounds.set(shapeInset, shapeInset, getWidth() - shapeInset, getHeight() - shapeInset);
+            shapeDrawer.drawTrack(canvas, shapeBounds, shapeInset - ringInset, backgroundPaint);
+            shapeDrawer.drawProgress(canvas, shapeBounds, shapeInset - ringInset, progress, progressPaint);
+            return;
+        }
         canvas.drawOval(arcBounds, backgroundPaint);
         canvas.drawArc(arcBounds, -90f, progress * 360f, false, progressPaint);
     }
@@ -68,6 +84,7 @@ public final class RoundVideoProgressView extends FrameLayout {
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(AndroidUtilities.dp(3));
         paint.setStrokeCap(Paint.Cap.ROUND);
+        paint.setStrokeJoin(Paint.Join.ROUND);
     }
 
     private static float clamp(float value, float min, float max) {

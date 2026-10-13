@@ -240,6 +240,7 @@ public class MessageObject {
     public ArrayList<TLRPC.PhotoSize> photoThumbs;
     public ArrayList<TLRPC.PhotoSize> photoThumbs2;
     public VideoEditedInfo videoEditedInfo;
+    public int videoShape;
     public ArrayList<Integer> pollMediaMapping;
     public boolean shouldRemoveVideoEditedInfo;
     public boolean viewsReloaded;
@@ -1975,6 +1976,7 @@ public class MessageObject {
         if (checkMediaExists) {
             checkMediaExistance();
         }
+        videoShape = VideoShape.resolve(currentAccount, messageOwner);
     }
 
     protected void checkBigAnimatedEmoji() {

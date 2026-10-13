@@ -39,10 +39,11 @@ public class RoundVideoSettingsActivity extends BaseFragment {
     private static final int ROW_FRAME_RATE = 4;
     private static final int ROW_BITRATE = 5;
     private static final int ROW_GENERAL_INFO = 6;
-    private static final int ROW_COMPOSITION_HEADER = 7;
+    private static final int ROW_SHAPES_HEADER = 7;
     private static final int ROW_COMPOSITION = 8;
-    private static final int ROW_COMPOSITION_INFO = 9;
-    private static final int ROW_COUNT = BuildConfig.DEBUG_PRIVATE_VERSION ? 10 : 7;
+    private static final int ROW_RANDOM_INCOMING_SHAPES = 9;
+    private static final int ROW_SHAPES_INFO = 10;
+    private static final int ROW_COUNT = BuildConfig.DEBUG_PRIVATE_VERSION ? 11 : 7;
 
     private static final int[] BITRATES = {
             750_000,
@@ -78,7 +79,7 @@ public class RoundVideoSettingsActivity extends BaseFragment {
         listView.setLayoutManager(new LinearLayoutManager(context));
         listView.setVerticalScrollBarEnabled(false);
         listView.setAdapter(adapter = new ListAdapter(context));
-        listView.setOnItemClickListener((view, position) -> onRowClicked(position));
+        listView.setOnItemClickListener(this::onRowClicked);
         frameLayout.addView(listView, LayoutHelper.createFrame(
                 LayoutHelper.MATCH_PARENT,
                 LayoutHelper.MATCH_PARENT
@@ -86,10 +87,18 @@ public class RoundVideoSettingsActivity extends BaseFragment {
         return fragmentView;
     }
 
-    private void onRowClicked(int position) {
+    private void onRowClicked(View view, int position) {
         if (position == ROW_ENABLED) {
-            SharedSettings.roundVideoCamera2Enabled.set(!SharedSettings.roundVideoCamera2Enabled.get());
-            adapter.notifyDataSetChanged();
+            ((TextCheckCell) view).setChecked(SharedSettings.roundVideoCamera2Enabled.toggle());
+            updateCamera2RowsEnabled();
+            return;
+        }
+        if (position == ROW_COMPOSITION) {
+            ((TextCheckCell) view).setChecked(SharedSettings.roundVideoShapeComposition.toggle());
+            return;
+        }
+        if (position == ROW_RANDOM_INCOMING_SHAPES) {
+            ((TextCheckCell) view).setChecked(SharedSettings.roundVideoRandomIncomingShapes.toggle());
             return;
         }
         if (!SharedSettings.roundVideoCamera2Enabled.get()) {
@@ -133,9 +142,17 @@ public class RoundVideoSettingsActivity extends BaseFragment {
                     labels,
                     index -> SharedSettings.roundVideoVideoBitrate.set(BITRATES[index])
             );
-        } else if (position == ROW_COMPOSITION) {
-            SharedSettings.roundVideoComposition.set(!SharedSettings.roundVideoComposition.get());
-            adapter.notifyItemChanged(position);
+        }
+    }
+
+    /** Rebinds the visible Camera2-only rows in place, so the switch that was tapped keeps its own animation. */
+    private void updateCamera2RowsEnabled() {
+        for (int i = 0; i < listView.getChildCount(); i++) {
+            RecyclerView.ViewHolder holder = listView.getChildViewHolder(listView.getChildAt(i));
+            int position = holder.getAdapterPosition();
+            if (position >= ROW_OUTPUT_RESOLUTION && position <= ROW_BITRATE) {
+                adapter.onBindViewHolder(holder, position);
+            }
         }
     }
 
@@ -187,7 +204,7 @@ public class RoundVideoSettingsActivity extends BaseFragment {
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            if (position == ROW_ENABLED) {
+            if (position == ROW_ENABLED || position == ROW_COMPOSITION || position == ROW_RANDOM_INCOMING_SHAPES) {
                 return true;
             }
             if (!SharedSettings.roundVideoCamera2Enabled.get()) {
@@ -196,8 +213,7 @@ public class RoundVideoSettingsActivity extends BaseFragment {
             return position == ROW_OUTPUT_RESOLUTION
                     || position == ROW_CAMERA_RESOLUTION
                     || position == ROW_FRAME_RATE
-                    || position == ROW_BITRATE
-                    || position == ROW_COMPOSITION;
+                    || position == ROW_BITRATE;
         }
 
         @NonNull
@@ -229,20 +245,30 @@ public class RoundVideoSettingsActivity extends BaseFragment {
                 HeaderCell cell = (HeaderCell) holder.itemView;
                 cell.setText(position == ROW_GENERAL_HEADER
                         ? LocaleController.getString(R.string.RoundVideoGeneral)
-                        : LocaleController.getString(R.string.RoundVideoComposition));
+                        : LocaleController.getString(R.string.RoundVideoShapes));
             } else if (holder.getItemViewType() == TYPE_CHECK) {
                 TextCheckCell cell = (TextCheckCell) holder.itemView;
-                cell.setEnabled(position == ROW_ENABLED || enabled);
+                cell.setEnabled(true);
                 if (position == ROW_ENABLED) {
                     cell.setTextAndCheck(
                             LocaleController.getString(R.string.RoundVideoUseNewRecorder),
                             enabled,
                             false
                     );
+                } else if (position == ROW_COMPOSITION) {
+                    cell.setTextAndValueAndCheck(
+                            LocaleController.getString(R.string.RoundVideoShapeComposition),
+                            LocaleController.getString(R.string.RoundVideoShapeCompositionInfo),
+                            SharedSettings.roundVideoShapeComposition.get(),
+                            true,
+                            true
+                    );
                 } else {
-                    cell.setTextAndCheck(
-                            LocaleController.getString(R.string.RoundVideoCompositionEnabled),
-                            SharedSettings.roundVideoComposition.get(),
+                    cell.setTextAndValueAndCheck(
+                            LocaleController.getString(R.string.RoundVideoRandomIncomingShapes),
+                            LocaleController.getString(R.string.RoundVideoRandomIncomingShapesInfo),
+                            SharedSettings.roundVideoRandomIncomingShapes.get(),
+                            true,
                             false
                     );
                 }
@@ -278,20 +304,21 @@ public class RoundVideoSettingsActivity extends BaseFragment {
                 TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                 cell.setText(position == ROW_GENERAL_INFO
                         ? LocaleController.getString(R.string.RoundVideoGeneralInfo)
-                        : LocaleController.getString(R.string.RoundVideoCompositionInfo));
+                        : LocaleController.getString(R.string.RoundVideoShapesInfo));
             }
         }
 
         @Override
         public int getItemViewType(int position) {
-            if (position == ROW_GENERAL_HEADER || position == ROW_COMPOSITION_HEADER) {
+            if (position == ROW_GENERAL_HEADER || position == ROW_SHAPES_HEADER) {
                 return TYPE_HEADER;
             }
             if (position == ROW_ENABLED
-                    || position == ROW_COMPOSITION) {
+                    || position == ROW_COMPOSITION
+                    || position == ROW_RANDOM_INCOMING_SHAPES) {
                 return TYPE_CHECK;
             }
-            if (position == ROW_GENERAL_INFO || position == ROW_COMPOSITION_INFO) {
+            if (position == ROW_GENERAL_INFO || position == ROW_SHAPES_INFO) {
                 return TYPE_INFO;
             }
             return TYPE_VALUE;

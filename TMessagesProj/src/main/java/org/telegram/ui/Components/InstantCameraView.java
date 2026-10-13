@@ -104,6 +104,7 @@ import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import org.telegram.ui.Stories.recorder.DualCameraView;
 import org.telegram.ui.Stories.recorder.FlashViews;
 import org.telegram.ui.Stories.recorder.StoryEntry;
+import org.telegram.utils.settings.SharedSettings;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -258,6 +259,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     private boolean allowSendingWhileRecording;
 
     private final LinearLayout buttonsLayout;
+    private final LinearLayout cameraButtonsLayout;
     private final int buttonsSizePx;
 
 
@@ -283,6 +285,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         };
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeCap(Paint.Cap.ROUND);
+        paint.setStrokeJoin(Paint.Join.ROUND);
         paint.setStrokeWidth(dp(3));
         paint.setColor(0xffffffff);
 
@@ -308,7 +311,11 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         cameraContainer.setOutlineProvider(new ViewOutlineProvider() {
             @Override
             public void getOutline(View view, Outline outline) {
-                outline.setOval(0, 0, textureViewSize, textureViewSize);
+                if (videoShapeDrawer.isCircle()) {
+                    outline.setOval(0, 0, textureViewSize, textureViewSize);
+                } else {
+                    outline.setRect(0, 0, textureViewSize, textureViewSize);
+                }
             }
         });
         cameraContainer.setClipToOutline(true);
@@ -318,16 +325,17 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         addView(flashViews.foregroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
 
-        buttonsLayout = new LinearLayout(context);
-        buttonsLayout.setPadding(dp(6), dp(6), dp(6), dp(6));
+        cameraButtonsLayout = new LinearLayout(context);
+        cameraButtonsLayout.setPadding(dp(6), dp(6), dp(6), dp(6));
 
-        buttonsLayout.setOrientation(LinearLayout.HORIZONTAL);
-        addView(buttonsLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 56, Gravity.LEFT | Gravity.BOTTOM, 1, 0, 0, 0));
+        cameraButtonsLayout.setOrientation(LinearLayout.HORIZONTAL);
+        buttonsLayout = createControlsRow(cameraButtonsLayout, resourcesProvider);
+        addView(buttonsLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 56, Gravity.LEFT | Gravity.BOTTOM, 1, 0, 68, 0));
 
         switchCameraButton = new FlashViews.ImageViewInvertable(context);
         switchCameraButton.setScaleType(ImageView.ScaleType.CENTER);
         switchCameraButton.setContentDescription(LocaleController.getString(R.string.AccDescrSwitchCamera));
-        buttonsLayout.addView(switchCameraButton, LayoutHelper.createLinear(44, 44));
+        cameraButtonsLayout.addView(switchCameraButton, LayoutHelper.createLinear(44, 44));
         switchCameraButton.setOnClickListener(v -> {
             if (!cameraReady || !isCameraSessionInitiated() || cameraThread == null) {
                 return;
@@ -384,7 +392,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
 
         flashButton = new FlashViews.ImageViewInvertable(context);
         flashButton.setScaleType(ImageView.ScaleType.CENTER);
-        buttonsLayout.addView(flashButton, LayoutHelper.createLinear(44, 44));
+        cameraButtonsLayout.addView(flashButton, LayoutHelper.createLinear(44, 44));
         flashButton.setOnClickListener(v -> {
             flashing = !flashing;
             updateFlash();
@@ -413,15 +421,23 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
 
             @Override
             protected void onDraw(Canvas canvas) {
+                final boolean shaped = !videoShapeDrawer.isCircle();
+                if (shaped) {
+                    canvas.save();
+                    videoShapeDrawer.clip(canvas, 0, 0, textureViewSize, textureViewSize);
+                }
                 super.onDraw(canvas);
                 if (needDrawFlickerStub) {
                     flickerDrawable.setParentWidth(textureViewSize);
                     AndroidUtilities.rectTmp.set(0, 0, textureViewSize, textureViewSize);
-                    float rad = AndroidUtilities.rectTmp.width() / 2f;
+                    float rad = shaped ? 0 : AndroidUtilities.rectTmp.width() / 2f;
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, blackoutPaint);
                     AndroidUtilities.rectTmp.inset(dp(1), dp(1));
                     flickerDrawable.draw(canvas, AndroidUtilities.rectTmp, rad, null);
                     invalidate();
+                }
+                if (shaped) {
+                    canvas.restore();
                 }
             }
         };
@@ -432,10 +448,11 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     }
 
     public void setButtonsBackground(BlurredBackgroundDrawableViewFactory factory, BlurredBackgroundColorProvider colorProvider) {
-        BlurredBackgroundDrawable drawable = factory.create(buttonsLayout, colorProvider);
+        BlurredBackgroundDrawable drawable = factory.create(cameraButtonsLayout, colorProvider);
         drawable.setPadding(dp(6));
         drawable.setRadius(dp(21));
-        buttonsLayout.setBackground(drawable);
+        cameraButtonsLayout.setBackground(drawable);
+        setVideoShapeStripBackground(factory, colorProvider);
     }
 
     private Boolean wasFlashing;
@@ -519,7 +536,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 textureOverlayView.getLayoutParams().width = textureOverlayView.getLayoutParams().height = textureViewSize;
                 cameraContainer.getLayoutParams().width = cameraContainer.getLayoutParams().height = textureViewSize;
                 ((LayoutParams) muteImageView.getLayoutParams()).topMargin = textureViewSize / 2 - dp(24);
-                textureOverlayView.setRoundRadius(textureViewSize / 2);
+                textureOverlayView.setRoundRadius(videoShapeDrawer.isCircle() ? textureViewSize / 2 : 0);
                 cameraContainer.invalidateOutline();
             }
             updateTextureViewSize = false;
@@ -624,7 +641,12 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             if (!flipAnimationInProgress) {
                 canvas.scale(cameraContainer.getScaleX(), cameraContainer.getScaleY(), rect.centerX(), rect.centerY());
             }
-            canvas.drawArc(rect, -90, 360 * progress, false, paint);
+            if (videoShapeDrawer.isCircle()) {
+                canvas.drawArc(rect, -90, 360 * progress, false, paint);
+            } else {
+                AndroidUtilities.rectTmp.set(x, y, x + cameraContainer.getMeasuredWidth(), y + cameraContainer.getMeasuredHeight());
+                videoShapeDrawer.drawProgress(canvas, AndroidUtilities.rectTmp, dp(8), progress, paint);
+            }
             canvas.restore();
         }
     }
@@ -704,6 +726,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         if (textureView != null) {
             return;
         }
+        resetVideoShape(fromPaused);
 
         if (switchCameraDrawable == null) {
             switchCameraDrawable = new RLottieDrawable(R.raw.roundcamera_flip, buttonsSizePx, buttonsSizePx);
@@ -935,6 +958,23 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         cameraContainer.setTranslationY(animationTranslationY + panTranslationY);
     }
 
+    private boolean lastVideoShapeCircle = true;
+
+    @Override
+    protected void onVideoShapeUpdate() {
+        boolean circle = videoShapeDrawer.isCircle();
+        if (lastVideoShapeCircle != circle) {
+            lastVideoShapeCircle = circle;
+            cameraContainer.invalidateOutline();
+            if (textureViewSize > 0) {
+                textureOverlayView.setRoundRadius(circle ? textureViewSize / 2 : 0);
+            }
+        }
+        cameraContainer.invalidate();
+        textureOverlayView.invalidate();
+        invalidate();
+    }
+
     public RectF getCameraRect() {
         cameraContainer.getLocationOnScreen(position);
         return new RectF(
@@ -1113,6 +1153,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     }
 
     public void hideCamera(boolean async) {
+        hideSwipeHint();
         destroy(async);
         cameraContainer.setTranslationX(0);
         textureOverlayView.setTranslationX(0);
@@ -2843,7 +2884,9 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             });
             videoPlayer.setTextureView(textureView);
             videoPlayer.preparePlayer(Uri.fromFile(file), "other");
-            videoPlayer.play();
+            if (!isPreviewPlaybackHeld()) {
+                videoPlayer.play();
+            }
             videoPlayer.setMute(true);
             startProgressTimer();
 
@@ -3330,7 +3373,7 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 overlayHelper.destroy();
                 overlayHelper = null;
             }
-            overlayHelper = new InstantCameraVideoEncoderOverlayHelper(videoWidth, videoHeight);
+            overlayHelper = new InstantCameraVideoEncoderOverlayHelper(videoWidth, videoHeight, SharedSettings.roundVideoShapeComposition.get());
 
             String vertexShaderSource, fragmentShaderSource;
             if (overlayHelper != null) {
@@ -3702,6 +3745,11 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
+            final boolean shaped = !videoShapeDrawer.isCircle();
+            if (shaped) {
+                canvas.save();
+                videoShapeDrawer.clip(canvas, 0, 0, textureViewSize, textureViewSize);
+            }
             super.dispatchDraw(canvas);
             if (imageProgress != 1f) {
                 imageProgress += 16 / 250.0f;
@@ -3723,6 +3771,9 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 imageReceiver.setAlpha(oldAlpha);
                 canvas.restore();
             }
+            if (shaped) {
+                canvas.restore();
+            }
         }
     }
 
@@ -3731,6 +3782,10 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     public boolean onTouchEvent(MotionEvent ev) {
         if (ev.getAction() == MotionEvent.ACTION_DOWN && ev.getY() > getMeasuredHeight() - getPaddingBottom()) {
             return false;
+        }
+        AndroidUtilities.rectTmp.set(cameraContainer.getX(), cameraContainer.getY(), cameraContainer.getX() + cameraContainer.getMeasuredWidth(), cameraContainer.getY() + cameraContainer.getMeasuredHeight());
+        if (handleShapeSwipe(ev, AndroidUtilities.rectTmp.contains(ev.getX(), ev.getY()))) {
+            return true;
         }
 
         if (ev.getAction() == MotionEvent.ACTION_DOWN && delegate != null) {

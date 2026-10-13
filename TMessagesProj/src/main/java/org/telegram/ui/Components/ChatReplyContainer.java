@@ -22,6 +22,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.VideoShape;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
@@ -111,6 +112,19 @@ public class ChatReplyContainer extends FrameLayout {
 
         public boolean hasSpoiler;
         public boolean active;
+        private VideoShapeDrawer videoShapeDrawer;
+
+        /** Masks the thumbnail with a round video's shape; circle keeps the usual round radius. */
+        public void setVideoShape(int shape) {
+            if (shape != VideoShape.CIRCLE && videoShapeDrawer == null) {
+                videoShapeDrawer = new VideoShapeDrawer(image::invalidate);
+                videoShapeDrawer.setLive(VideoShapeDrawer.isLiveThumbnailAllowed());
+            }
+            if (videoShapeDrawer != null) {
+                videoShapeDrawer.setShape(shape, false);
+            }
+            image.invalidate();
+        }
 
         public Layout(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
@@ -139,6 +153,18 @@ public class ChatReplyContainer extends FrameLayout {
             SpoilerEffect replySpoilerEffect = new SpoilerEffect();
             image = new BackupImageView(context) {
                 Path path = new Path();
+
+                @Override
+                protected void onDraw(Canvas canvas) {
+                    if (videoShapeDrawer == null || videoShapeDrawer.isCircle()) {
+                        super.onDraw(canvas);
+                        return;
+                    }
+                    canvas.save();
+                    videoShapeDrawer.clip(canvas, 0, 0, getWidth(), getHeight());
+                    super.onDraw(canvas);
+                    canvas.restore();
+                }
 
                 @Override
                 public void draw(Canvas canvas) {

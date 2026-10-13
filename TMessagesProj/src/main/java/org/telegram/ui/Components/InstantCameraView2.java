@@ -76,6 +76,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
     private final TextureView textureView;
     private final BackupImageView textureOverlayView;
     private final LinearLayout buttonsLayout;
+    private final LinearLayout cameraButtonsLayout;
     private final FlashViews.ImageViewInvertable switchCameraButton;
     private final FlashViews.ImageViewInvertable flashButton;
     private final ImageView muteImageView;
@@ -158,7 +159,19 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
 
         cameraContainer = new CameraContainer(context);
         progressView = new RoundVideoProgressView(context);
-        previewContainer = new FrameLayout(context);
+        previewContainer = new FrameLayout(context) {
+            @Override
+            protected void dispatchDraw(@NonNull Canvas canvas) {
+                if (videoShapeDrawer.isCircle()) {
+                    super.dispatchDraw(canvas);
+                    return;
+                }
+                canvas.save();
+                videoShapeDrawer.clip(canvas, 0, 0, getWidth(), getHeight());
+                super.dispatchDraw(canvas);
+                canvas.restore();
+            }
+        };
         textureView = createTextureView(context);
         previewContainer.addView(textureView, LayoutHelper.createFrame(
                 LayoutHelper.MATCH_PARENT,
@@ -174,7 +187,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
             protected void onDraw(Canvas canvas) {
                 super.onDraw(canvas);
                 if (!drawInitialPlaceholder) return;
-                float radius = Math.min(getWidth(), getHeight()) * 0.5f;
+                float radius = videoShapeDrawer.isCircle() ? Math.min(getWidth(), getHeight()) * 0.5f : 0f;
                 AndroidUtilities.rectTmp.set(0, 0, getWidth(), getHeight());
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, placeholderDimPaint);
                 AndroidUtilities.rectTmp.inset(dp(1), dp(1));
@@ -220,16 +233,17 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
                 Gravity.FILL
         ));
 
-        buttonsLayout = new LinearLayout(context);
-        buttonsLayout.setOrientation(LinearLayout.HORIZONTAL);
-        buttonsLayout.setPadding(dp(6), dp(6), dp(6), dp(6));
+        cameraButtonsLayout = new LinearLayout(context);
+        cameraButtonsLayout.setOrientation(LinearLayout.HORIZONTAL);
+        cameraButtonsLayout.setPadding(dp(6), dp(6), dp(6), dp(6));
+        buttonsLayout = createControlsRow(cameraButtonsLayout, resourcesProvider);
         addView(buttonsLayout, LayoutHelper.createFrame(
                 LayoutHelper.WRAP_CONTENT,
                 56,
                 Gravity.LEFT | Gravity.BOTTOM,
                 1,
                 0,
-                0,
+                68,
                 0
         ));
 
@@ -238,12 +252,12 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
         switchCameraButton.setContentDescription(
                 LocaleController.getString(R.string.AccDescrSwitchCamera)
         );
-        buttonsLayout.addView(switchCameraButton, LayoutHelper.createLinear(44, 44));
+        cameraButtonsLayout.addView(switchCameraButton, LayoutHelper.createLinear(44, 44));
         switchCameraButton.setOnClickListener(view -> switchCamera());
 
         flashButton = new FlashViews.ImageViewInvertable(context);
         flashButton.setScaleType(ImageView.ScaleType.CENTER);
-        buttonsLayout.addView(flashButton, LayoutHelper.createLinear(44, 44));
+        cameraButtonsLayout.addView(flashButton, LayoutHelper.createLinear(44, 44));
         flashButton.setOnClickListener(view -> toggleFlash());
 
         buttonIconSize = dp(isNewDesign ? 24 : 28);
@@ -272,6 +286,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
         addView(muteImageView, LayoutHelper.createFrame(48, 48, Gravity.CENTER));
 
         textureView.setOnTouchListener(this::handleZoomTouch);
+        progressView.setShapeDrawer(videoShapeDrawer, dp(14));
         super.setVisibility(INVISIBLE);
     }
 
@@ -280,10 +295,11 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
             BlurredBackgroundDrawableViewFactory factory,
             BlurredBackgroundColorProvider colorProvider
     ) {
-        BlurredBackgroundDrawable drawable = factory.create(buttonsLayout, colorProvider);
+        BlurredBackgroundDrawable drawable = factory.create(cameraButtonsLayout, colorProvider);
         drawable.setPadding(dp(6));
         drawable.setRadius(dp(21));
-        buttonsLayout.setBackground(drawable);
+        cameraButtonsLayout.setBackground(drawable);
+        setVideoShapeStripBackground(factory, colorProvider);
     }
 
     @Override
@@ -357,6 +373,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
     @Override
     public void showCamera(boolean fromPaused) {
         if (session != null) return;
+        resetVideoShape(fromPaused);
         setVisibilityFromPause = fromPaused;
         setVisibility(VISIBLE);
         progressView.getPaint().setAlpha(255);
@@ -376,7 +393,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
                 .setVideoBitrate(SharedSettings.roundVideoVideoBitrate.get())
                 .setCameraResolution(SharedSettings.roundVideoCameraResolution.get())
                 .setFrameRate(SharedSettings.roundVideoFrameRate.get())
-                .setCompositionEnabled(SharedSettings.roundVideoComposition.get())
+                .setCompositionEnabled(SharedSettings.roundVideoShapeComposition.get())
                 .setListener(sessionListener)
                 .setOutputListener(upload)
                 .setScreenFlashController(this::setScreenFlashEnabled)
@@ -543,6 +560,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
 
     @Override
     public void hideCamera(boolean async) {
+        hideSwipeHint();
         destroy(async);
         cameraContainer.setTranslationX(0f);
         animationTranslationY = 0f;
@@ -740,11 +758,17 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
             );
             float duration = Math.max(1L, durationMs);
             dispatchTrimRange(trimStartMs / duration, trimEndMs / duration);
+            if (isPreviewPlaybackHeld()) {
+                changeVideoPreviewState(1, 0);
+            }
         }
 
         @Override
         public void onPreviewFirstFrame() {
             hideInitialPlaceholder();
+            if (isPreviewPlaybackHeld()) {
+                changeVideoPreviewState(1, 0);
+            }
         }
 
         @Override
@@ -962,6 +986,9 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
         if (session == null || stateInfo == null) {
             return false;
         }
+        if (handleShapeSwipe(event, true)) {
+            return true;
+        }
         if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
             if (zoomResetAnimator != null) zoomResetAnimator.cancel();
             pinchZoomActive = false;
@@ -1069,6 +1096,19 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
 
     private void updateTranslationY() {
         cameraContainer.setTranslationY(animationTranslationY + panTranslationY);
+    }
+
+    @Override
+    protected void onVideoShapeUpdate() {
+        boolean circle = videoShapeDrawer.isCircle();
+        if (textureView.getClipToOutline() != circle) {
+            textureView.setClipToOutline(circle);
+            textureOverlayView.setClipToOutline(circle);
+        }
+        previewContainer.invalidate();
+        textureOverlayView.invalidate();
+        progressView.invalidate();
+        cameraContainer.invalidate();
     }
 
     private void showInitialPlaceholder() {
@@ -1245,6 +1285,17 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
                 invalidate();
             }
             canvas.save();
+            if (!videoShapeDrawer.isCircle()) {
+                float left = progressView.getLeft() + previewContainer.getLeft();
+                float top = progressView.getTop() + previewContainer.getTop();
+                videoShapeDrawer.clip(
+                        canvas,
+                        left,
+                        top,
+                        left + previewContainer.getWidth(),
+                        top + previewContainer.getHeight()
+                );
+            }
             canvas.translate(
                     progressView.getLeft() + previewContainer.getLeft() + textureView.getLeft(),
                     progressView.getTop() + previewContainer.getTop() + textureView.getTop()

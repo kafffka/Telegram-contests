@@ -23,8 +23,11 @@ public final class SharedSettings {
     public static final IntSetting roundVideoVideoBitrate =
         IntSetting.of("round_video_video_bitrate", 1_000_000);
 
-    public static final BooleanSetting roundVideoComposition =
-        BooleanSetting.of("round_video_composition", true);
+    public static final BooleanSetting roundVideoShapeComposition =
+        BooleanSetting.of("round_video_shape_composition", false);
+
+    public static final BooleanSetting roundVideoRandomIncomingShapes =
+        BooleanSetting.of("round_video_random_incoming_shapes", false);
 
     public static final EnumSetting<RoundVideoSession.CameraFacing> roundVideoLastCamera =
         EnumSetting.of("round_video_last_camera", RoundVideoSession.CameraFacing.FRONT);
