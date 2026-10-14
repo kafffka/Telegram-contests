@@ -6797,6 +6797,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (roundShaped) {
             if (roundShapeDrawer == null) {
                 roundShapeDrawer = new VideoShapeDrawer(this::invalidate);
+                roundShapeDrawer.setLive(true);
             }
             roundShapeDrawer.setShape(messageObject.videoShape, false);
         }
@@ -14462,9 +14463,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
             drawTime = true;
         } else if (drawPhotoImage) {
-            if (roundShaped) {
-                roundShapeDrawer.setLive(MediaController.getInstance().isPlayingMessage(currentMessageObject) && !MediaController.getInstance().isMessagePaused());
-            }
             float pipFloat = roundVideoPlayPipFloat.get();
             if (pipFloat > 0) {
                 if (drillHolePaint == null) {

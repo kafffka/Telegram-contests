@@ -43,7 +43,7 @@ public class RoundVideoSettingsActivity extends BaseFragment {
     private static final int ROW_COMPOSITION = 8;
     private static final int ROW_RANDOM_INCOMING_SHAPES = 9;
     private static final int ROW_SHAPES_INFO = 10;
-    private static final int ROW_COUNT = BuildConfig.DEBUG_PRIVATE_VERSION ? 11 : 7;
+    private static final int ROW_COUNT = 11;
 
     private static final int[] BITRATES = {
             750_000,
