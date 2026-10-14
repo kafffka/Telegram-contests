@@ -61,6 +61,7 @@ public class VideoEditedInfo {
     public long estimatedSize;
     public long estimatedDuration;
     public boolean roundVideo;
+    public int videoShape;
     public boolean muted;
     public float volume = 1f;
     public long originalDuration;

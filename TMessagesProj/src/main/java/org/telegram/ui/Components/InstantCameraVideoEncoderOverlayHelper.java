@@ -33,11 +33,12 @@ public class InstantCameraVideoEncoderOverlayHelper {
     private static final int TEXTURE_BUFFER_WATERMARK_LOGO_POSITION = 16;
 
     private final int videoWidth, videoHeight;
+    private final boolean composition;
 
     private final Program programRenderTexture = new Program(R.raw.round_blur_stage_0_frag);
-    private final Program programRenderWatermark = new Program(R.raw.round_blur_stage_3_frag);
-    private final BlurProgram programRenderBlur = new BlurProgram();
-    private final MixProgram programRenderMixed = new MixProgram();
+    private final Program programRenderWatermark;
+    private final BlurProgram programRenderBlur;
+    private final MixProgram programRenderMixed;
 
     private final FloatBuffer attributeVertexBuffer;
     private final FloatBuffer attributeTextureBuffer;
@@ -48,8 +49,17 @@ public class InstantCameraVideoEncoderOverlayHelper {
     private final int[] glTextures = new int[5];
 
     public InstantCameraVideoEncoderOverlayHelper(int width, int height) {
+        this(width, height, true);
+    }
+
+    /** composition = false: copy the camera frame as is, without the blurred corners and the watermark. */
+    public InstantCameraVideoEncoderOverlayHelper(int width, int height, boolean composition) {
         this.videoWidth = width;
         this.videoHeight = height;
+        this.composition = composition;
+        programRenderWatermark = composition ? new Program(R.raw.round_blur_stage_3_frag) : null;
+        programRenderBlur = composition ? new BlurProgram() : null;
+        programRenderMixed = composition ? new MixProgram() : null;
 
         final float[] texData = new float[8 * (27 + 2)];
         setTextureCords(texData, TEXTURE_BUFFER_NORMAL_POSITION, 0, 1, 1, 0);
@@ -66,6 +76,9 @@ public class InstantCameraVideoEncoderOverlayHelper {
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
 
+            if (!composition && i != TEXTURE_INDEX_FULL_SAMPLE) {
+                continue;
+            }
             if (i == TEXTURE_INDEX_WATERMARK_LOGO) {
                 final int logoSize = Math.round(width * 0.2f);
                 final int logoOffset = Math.round(width * 28 / 1536f);
@@ -151,6 +164,31 @@ public class InstantCameraVideoEncoderOverlayHelper {
 
     public void render() {
         GLES20.glDisable(GLES20.GL_BLEND);
+
+        if (!composition) {
+            final Program program = programRenderTexture;
+
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+            GLES20.glViewport(0, 0, videoWidth, videoHeight);
+
+            GLES20.glUseProgram(program.program);
+            GLES20.glVertexAttribPointer(program.attributePositionHandle, 3, GLES20.GL_FLOAT, false, 12, attributeVertexBuffer.position(VERTEX_BUFFER_NORMAL_POSITION));
+            GLES20.glEnableVertexAttribArray(program.attributePositionHandle);
+            GLES20.glVertexAttribPointer(program.attributeTextureHandle, 2, GLES20.GL_FLOAT, false, 8, attributeTextureBuffer.position(TEXTURE_BUFFER_NORMAL_POSITION));
+            GLES20.glEnableVertexAttribArray(program.attributeTextureHandle);
+
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, glTextures[TEXTURE_INDEX_FULL_SAMPLE]);
+            GLES20.glUniform1i(program.uniformTextureHandle, 0);
+
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+            GLES20.glDisableVertexAttribArray(program.attributeTextureHandle);
+            GLES20.glDisableVertexAttribArray(program.attributePositionHandle);
+            GLES20.glUseProgram(0);
+            return;
+        }
 
         {
             final Program program = programRenderTexture;
@@ -279,9 +317,11 @@ public class InstantCameraVideoEncoderOverlayHelper {
 
     public void destroy() {
         programRenderTexture.destroy();
-        programRenderBlur.destroy();
-        programRenderMixed.destroy();
-        programRenderWatermark.destroy();
+        if (composition) {
+            programRenderBlur.destroy();
+            programRenderMixed.destroy();
+            programRenderWatermark.destroy();
+        }
 
         GLES20.glDeleteTextures(5, glTextures, 0);
         GLES20.glDeleteFramebuffers(1, glFrameBuffers, 0);

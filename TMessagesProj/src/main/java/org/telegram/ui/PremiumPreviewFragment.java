@@ -240,6 +240,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
     public final static int PREMIUM_FEATURE_SHARING_DISABLE = 41;
     public final static int PREMIUM_FEATURE_AI_EDITOR = 42;
     public final static int PREMIUM_FEATURE_RICH_EDITOR = 43;
+    public final static int PREMIUM_FEATURE_VIDEO_SHAPES = 44;
 
     private int statusBarHeight;
     private int firstViewHeight;
@@ -340,6 +341,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return PREMIUM_FEATURE_AI_EDITOR;
             case "rich_formatting":
                 return PREMIUM_FEATURE_RICH_EDITOR;
+            case "round_video_shapes":
+                return PREMIUM_FEATURE_VIDEO_SHAPES;
 
             case "business":
                 return PREMIUM_FEATURE_BUSINESS;
@@ -435,6 +438,8 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
                 return "ai_compose";
             case PREMIUM_FEATURE_RICH_EDITOR:
                 return "rich_formatting";
+            case PREMIUM_FEATURE_VIDEO_SHAPES:
+                return "round_video_shapes";
 
             case PREMIUM_FEATURE_BUSINESS:
                 return "business";
@@ -1020,6 +1025,7 @@ public class PremiumPreviewFragment extends BaseFragment implements Notification
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_SHARING_DISABLE, R.drawable.filled_sharing_off2_24, getString(R.string.PremiumPreviewSharingDisable), getString(R.string.PremiumPreviewSharingDisableDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_AI_EDITOR, R.drawable.premium_ai_editor, getString(R.string.PremiumPreviewAIEditor), getString(R.string.PremiumPreviewAIEditorDescription)));
         premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_RICH_EDITOR, R.drawable.premium_rich_editor, getString(R.string.PremiumPreviewRichEditor), getString(R.string.PremiumPreviewRichEditorDescription)));
+        premiumFeatures.add(new PremiumFeatureData(PREMIUM_FEATURE_VIDEO_SHAPES, R.drawable.input_video, getString(R.string.PremiumPreviewVideoShapes), getString(R.string.PremiumPreviewVideoShapesDescription)));
 
         if (messagesController.premiumFeaturesTypesToPosition.size() > 0) {
             for (int i = 0; i < premiumFeatures.size(); i++) {

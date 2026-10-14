@@ -84,6 +84,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.VideoShape;
 import org.telegram.messenger.utils.DrawableUtils;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -125,6 +126,7 @@ import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.URLSpanNoUnderlineBold;
 import org.telegram.ui.Components.VectorAvatarThumbDrawable;
+import org.telegram.ui.Components.VideoShapeDrawer;
 import org.telegram.ui.Components.dialogs.DialogMediaIconsHelper;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.DialogsActivity;
@@ -486,6 +488,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private Paint thumbBackgroundPaint;
     private boolean[] thumbImageSeen = new boolean[3];
     private ImageReceiver[] thumbImage = new ImageReceiver[3];
+    private final int[] thumbShape = new int[3];
+    private VideoShapeDrawer[] thumbShapeDrawer;
     private boolean[] drawPlay = new boolean[3];
     private boolean[] drawSpoiler = new boolean[3];
 
@@ -4632,7 +4636,22 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     //        thumbImage[i].getRoundRadius()[1],
                     //        thumbBackgroundPaint
                     //);
-                    thumbImage[i].draw(canvas);
+                    if (thumbShape[i] != VideoShape.CIRCLE) {
+                        if (thumbShapeDrawer == null) {
+                            thumbShapeDrawer = new VideoShapeDrawer[3];
+                        }
+                        if (thumbShapeDrawer[i] == null) {
+                            thumbShapeDrawer[i] = new VideoShapeDrawer(this::invalidate);
+                            thumbShapeDrawer[i].setLive(VideoShapeDrawer.isLiveThumbnailAllowed());
+                        }
+                        thumbShapeDrawer[i].setShape(thumbShape[i], false);
+                        canvas.save();
+                        thumbShapeDrawer[i].clip(canvas, AndroidUtilities.rectTmp);
+                        thumbImage[i].draw(canvas);
+                        canvas.restore();
+                    } else {
+                        thumbImage[i].draw(canvas);
+                    }
                     if (drawSpoiler[i]) {
                         if (thumbPath == null) {
                             thumbPath = new Path();
@@ -5718,7 +5737,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 int size = message.type == MessageObject.TYPE_PHOTO && selectedThumb != null ? selectedThumb.size : 0;
                 String filter = message.hasMediaSpoilers() ? "5_5_b" : "20_20";
                 thumbImage[index].setImage(ImageLocation.getForObject(selectedThumb, photoThumbsObject), filter, ImageLocation.getForObject(smallThumb, photoThumbsObject), filter, size, null, message, 0);
-                thumbImage[index].setRoundRadius(message.isRoundVideo() ? dp(18) : dp(2));
+                thumbShape[index] = message.isRoundVideo() ? message.videoShape : VideoShape.CIRCLE;
+                thumbImage[index].setRoundRadius(message.isRoundVideo() ? (thumbShape[index] != VideoShape.CIRCLE ? 0 : dp(18)) : dp(2));
                 needEmoji = false;
             }
         }
@@ -5760,6 +5780,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 String filter = "20_20";
                 thumbImage[index].setImage(ImageLocation.getForObject(selectedThumb, object), filter, ImageLocation.getForObject(smallThumb, object), filter, size, null, message, 0);
                 thumbImage[index].setRoundRadius(dp(2));
+                thumbShape[index] = VideoShape.CIRCLE;
                 needEmoji = false;
             }
         }
@@ -5777,6 +5798,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 String filter = "2_2_b";
                 thumbImage[index].setImage(ImageLocation.getForObject(thumb, message.messageOwner), filter, null, null, size, null, message, 0);
                 thumbImage[index].setRoundRadius(dp(2));
+                thumbShape[index] = VideoShape.CIRCLE;
                 needEmoji = false;
             }
         }

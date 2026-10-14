@@ -145,6 +145,11 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             premiumFeatures.clear();
             premiumFeatures.add(new PremiumPreviewFragment.PremiumFeatureData(PremiumPreviewFragment.FEATURE_GIFTS, R.drawable.gift, getString(R.string.FeaturePreviewGifts), getString(R.string.FeaturePreviewGiftsDescription)));
         }
+        if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_VIDEO_SHAPES && onlySelectedType) {
+            // Not in the server's feature list yet, which filters fillPremiumFeaturesList in release builds.
+            premiumFeatures.clear();
+            premiumFeatures.add(new PremiumPreviewFragment.PremiumFeatureData(PremiumPreviewFragment.PREMIUM_FEATURE_VIDEO_SHAPES, R.drawable.input_video, getString(R.string.PremiumPreviewVideoShapes), getString(R.string.PremiumPreviewVideoShapesDescription)));
+        }
 
         int selectedPositionLocal = 0;
         for (int i = 0; i < premiumFeatures.size(); i++) {
@@ -573,6 +578,9 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_APPLICATION_ICONS) {
                 premiumButtonView.buttonTextView.setText(LocaleController.getString(R.string.UnlockPremiumIcons));
                 premiumButtonView.setIcon(R.raw.unlock_icon);
+            } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_VIDEO_SHAPES) {
+                premiumButtonView.buttonTextView.setText(LocaleController.getString(R.string.UnlockPremiumVideoShapes));
+                premiumButtonView.setIcon(R.raw.unlock_icon);
             } else {
                 premiumButtonView.buttonTextView.setText(LocaleController.getString(R.string.AboutTelegramPremium));
             }
@@ -792,6 +800,9 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                 } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_SHARING_DISABLE) {
                     title.setText(LocaleController.getString(R.string.PremiumPreviewSharingDisable));
                     description.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.PremiumPreviewSharingDisableDescription)));
+                } else if (startType == PremiumPreviewFragment.PREMIUM_FEATURE_VIDEO_SHAPES) {
+                    title.setText(LocaleController.getString(R.string.PremiumPreviewVideoShapes));
+                    description.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.PremiumPreviewVideoShapesDescription2)));
                 } else {
                     title.setText(featureData.title);
                     description.setText(AndroidUtilities.replaceTags(featureData.description));
@@ -876,6 +887,8 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             return recyclerListView;
         } else if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_APPLICATION_ICONS) {
             return new PremiumAppIconsPreviewView(context, resourcesProvider);
+        } else if (featureData.type == PremiumPreviewFragment.PREMIUM_FEATURE_VIDEO_SHAPES) {
+            return new VideoShapesPreviewView(context, currentAccount, resourcesProvider);
         }
         return new VideoScreenPreview(context, svgIcon, currentAccount, featureData.type, resourcesProvider);
     }

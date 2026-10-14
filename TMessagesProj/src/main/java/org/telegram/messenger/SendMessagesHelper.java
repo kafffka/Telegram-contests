@@ -5151,6 +5151,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             } else if (videoEditedInfo != null && videoEditedInfo.notReadyYet) {
                 newMsgObj.videoEditedInfo.notReadyYet = videoEditedInfo.notReadyYet;
             }
+            if (videoEditedInfo != null && videoEditedInfo.roundVideo && videoEditedInfo.videoShape != VideoShape.CIRCLE) {
+                newMsgObj.videoShape = videoEditedInfo.videoShape;
+                VideoShape.remember(currentAccount, newMsgObj.getDialogId(), newMsgObj.getId(), videoEditedInfo.videoShape);
+            }
 
             if (groupId == 0) {
                 final ArrayList<MessageObject> objArr = new ArrayList<>();

@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RadialGradient;
 import android.graphics.Shader;
 
@@ -22,6 +23,16 @@ public class RoundVideoProgressShadow {
     }
 
     public void draw(Canvas canvas, float cx, float cy, float radius, float alpha) {
+        update(cx, cy, radius, alpha);
+        canvas.drawCircle(cx, cy, radius, shaderPaint);
+    }
+
+    public void draw(Canvas canvas, Path shape, float cx, float cy, float radius, float alpha) {
+        update(cx, cy, radius, alpha);
+        canvas.drawPath(shape, shaderPaint);
+    }
+
+    private void update(float cx, float cy, float radius, float alpha) {
         int sizesHash = (int) cx + ((int) cy << 12) + ((int) radius << 24);
         if (sizesHash != lastSizesHash) {
             matrix.reset();
@@ -31,6 +42,5 @@ public class RoundVideoProgressShadow {
             radialGradient.setLocalMatrix(matrix);
         }
         shaderPaint.setAlpha((int) (255 * alpha));
-        canvas.drawCircle(cx, cy, radius, shaderPaint);
     }
 }

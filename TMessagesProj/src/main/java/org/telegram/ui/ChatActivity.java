@@ -185,6 +185,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
+import org.telegram.messenger.VideoShape;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.camera.CameraView;
 import org.telegram.messenger.support.LongSparseIntArray;
@@ -1003,6 +1004,7 @@ public class ChatActivity extends BaseFragment implements
     private String startVideoEdit;
 
     private FrameLayout videoPlayerContainer;
+    private VideoShapeDrawer videoPlayerShape;
     private ChatMessageCell drawLaterRoundProgressCell;
     private AspectRatioFrameLayout aspectRatioFrameLayout;
     private TextureView videoTextureView;
@@ -8039,6 +8041,9 @@ public class ChatActivity extends BaseFragment implements
         } else {
             chatActivityEnterView.setDelegate(new ChatActivityEnterViewDelegate());
         }
+        chatActivityEnterView.setOnRecordHintShown(() -> {
+            if (instantCameraView != null) instantCameraView.hideSwipeHint();
+        });
         if (chatMode == MODE_SCHEDULED || isComments) {
             chatActivityEnterView.setSideButtonsForAttach(sideControlsButtonsLayout);
         }
@@ -10738,6 +10743,28 @@ public class ChatActivity extends BaseFragment implements
                     }
                 }
         );
+        instantCameraView.setOtherHintVisible(() -> chatActivityEnterView != null && chatActivityEnterView.isRecordHintVisible());
+        instantCameraView.setOnLockedVideoShapeTapped(shape -> {
+            if (chatActivityEnterView != null && chatActivityEnterView.isRecordingAudioVideo() && !chatActivityEnterView.isRecordLocked()) {
+                return;
+            }
+            // The sheet covers the video: keep its preview paused while it's open, play again on close.
+            instantCameraView.setPreviewPlaybackHeld(true);
+            if (chatActivityEnterView != null) {
+                chatActivityEnterView.pauseVideoRecording();
+            }
+            final Dialog.OnDismissListener release = dialog -> {
+                if (instantCameraView != null) {
+                    instantCameraView.setPreviewPlaybackHeld(false);
+                }
+            };
+            final PremiumFeatureBottomSheet sheet = new PremiumFeatureBottomSheet(this, PremiumPreviewFragment.PREMIUM_FEATURE_VIDEO_SHAPES, true);
+            // showDialog replaces this listener with its own, except when a sheet on the stack shows the dialog.
+            sheet.setOnDismissListener(release);
+            if (showDialog(sheet, release) == null) {
+                release.onDismiss(null);
+            }
+        });
         instantCameraView.setClipToPadding(false);
         instantCameraView.setButtonsBackground(glassBackgroundDrawableFactory, blurredBackgroundColorProvider);
 
@@ -12124,6 +12151,18 @@ public class ChatActivity extends BaseFragment implements
                     super.setTranslationY(translationY);
                     contentView.invalidate();
                 }
+
+                @Override
+                protected void dispatchDraw(Canvas canvas) {
+                    if (videoPlayerShape != null && !videoPlayerShape.isCircle() && getTag(R.id.parent_tag) == null) {
+                        canvas.save();
+                        videoPlayerShape.clip(canvas, 0, 0, getWidth(), getHeight());
+                        super.dispatchDraw(canvas);
+                        canvas.restore();
+                    } else {
+                        super.dispatchDraw(canvas);
+                    }
+                }
             };
             videoPlayerContainer.setOutlineProvider(new ViewOutlineProvider() {
                 @Override
@@ -12136,6 +12175,8 @@ public class ChatActivity extends BaseFragment implements
                             maxRad = Math.max(maxRad, rad[a]);
                         }
                         outline.setRoundRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight(), maxRad);
+                    } else if (videoPlayerShape != null && !videoPlayerShape.isCircle()) {
+                        outline.setRect(0, 0, AndroidUtilities.roundPlayingMessageSize(isSideMenued()), AndroidUtilities.roundPlayingMessageSize(isSideMenued()));
                     } else {
                         outline.setOval(0, 0, AndroidUtilities.roundPlayingMessageSize(isSideMenued()), AndroidUtilities.roundPlayingMessageSize(isSideMenued()));
                     }
@@ -12165,6 +12206,25 @@ public class ChatActivity extends BaseFragment implements
         videoPlayerContainer.setTag(null);
         aspectRatioFrameLayout.setDrawingReady(false);
         return videoTextureView;
+    }
+
+    private void setVideoPlayerShape(int shape) {
+        if (videoPlayerShape == null) {
+            if (shape == VideoShape.CIRCLE) {
+                return;
+            }
+            videoPlayerShape = new VideoShapeDrawer(() -> {
+                if (videoPlayerContainer != null) {
+                    videoPlayerContainer.invalidate();
+                }
+            });
+            videoPlayerShape.setLive(true);
+        }
+        if (videoPlayerShape.getShape() != shape) {
+            videoPlayerShape.setShape(shape, false);
+            videoPlayerContainer.invalidateOutline();
+            videoPlayerContainer.invalidate();
+        }
     }
 
     private void destroyTextureView() {
@@ -15450,8 +15510,10 @@ public class ChatActivity extends BaseFragment implements
                 replyImageView.setVisibility(View.INVISIBLE);
                 layoutParams1.leftMargin = layoutParams2.leftMargin = layoutParams3.leftMargin = AndroidUtilities.dp(52);
             } else {
+                final int replyVideoShape = thumbMediaMessageObject.isRoundVideo() ? thumbMediaMessageObject.videoShape : VideoShape.CIRCLE;
+                replyLayout.current().setVideoShape(replyVideoShape);
                 if (thumbMediaMessageObject.isRoundVideo()) {
-                    replyImageView.setRoundRadius(AndroidUtilities.dp(17));
+                    replyImageView.setRoundRadius(replyVideoShape != VideoShape.CIRCLE ? 0 : AndroidUtilities.dp(17));
                 } else {
                     replyImageView.setRoundRadius(AndroidUtilities.dp(2));
                 }
@@ -15759,6 +15821,7 @@ public class ChatActivity extends BaseFragment implements
                     FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) videoPlayerContainer.getLayoutParams();
                     if (messageObject.isRoundVideo()) {
                         videoPlayerContainer.setTag(R.id.parent_tag, null);
+                        setVideoPlayerShape(messageObject.videoShape);
                         if (layoutParams.width != AndroidUtilities.roundPlayingMessageSize(isSideMenued()) || layoutParams.height != AndroidUtilities.roundPlayingMessageSize(isSideMenued())) {
                             layoutParams.width = layoutParams.height = AndroidUtilities.roundPlayingMessageSize(isSideMenued());
                             aspectRatioFrameLayout.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
@@ -15774,8 +15837,9 @@ public class ChatActivity extends BaseFragment implements
                         videoPlayerContainer.setPivotY(0);
                         videoPlayerContainer.setScaleX(transitionScale);
                         videoPlayerContainer.setScaleY(transitionScale);
-                        videoTextureView.setScaleX(scale);
-                        videoTextureView.setScaleY(scale);
+                        float shapeZoom = VideoShape.contentZoom(messageObject);
+                        videoTextureView.setScaleX(scale * shapeZoom);
+                        videoTextureView.setScaleY(scale * shapeZoom);
                     } else {
                         videoPlayerContainer.setTag(R.id.parent_tag, imageReceiver);
                         if (layoutParams.width != imageReceiver.getImageWidth() || layoutParams.height != imageReceiver.getImageHeight()) {
@@ -17594,7 +17658,7 @@ public class ChatActivity extends BaseFragment implements
                 }
                 canvas.translate(0, -pullingDownOffset - transitionOffset);
                 if (messageObject != null && messageObject.type == MessageObject.TYPE_ROUND_VIDEO) {
-                    if (Theme.chat_roundVideoShadow != null && aspectRatioFrameLayout.isDrawingReady()) {
+                    if (Theme.chat_roundVideoShadow != null && aspectRatioFrameLayout.isDrawingReady() && (videoPlayerShape == null || videoPlayerShape.isCircle())) {
                         int x = (int) child.getX() - AndroidUtilities.dp(3);
                         int y = (int) child.getY() - AndroidUtilities.dp(2);
                         canvas.save();
@@ -17602,6 +17666,13 @@ public class ChatActivity extends BaseFragment implements
                         Theme.chat_roundVideoShadow.setAlpha(255);
                         Theme.chat_roundVideoShadow.setBounds(x, y, x + AndroidUtilities.roundPlayingMessageSize(isSideMenued()) + AndroidUtilities.dp(6), y + AndroidUtilities.roundPlayingMessageSize(isSideMenued()) + AndroidUtilities.dp(6));
                         Theme.chat_roundVideoShadow.draw(canvas);
+                        canvas.restore();
+                    } else if (videoPlayerShape != null && !videoPlayerShape.isCircle() && aspectRatioFrameLayout.isDrawingReady()) {
+                        canvas.save();
+                        canvas.translate(child.getX(), child.getY());
+                        canvas.scale(videoPlayerContainer.getScaleX(), videoPlayerContainer.getScaleY());
+                        AndroidUtilities.rectTmp.set(0, 0, child.getWidth(), child.getHeight());
+                        videoPlayerShape.drawShadow(canvas, AndroidUtilities.rectTmp, 255);
                         canvas.restore();
                     }
                     result = super.drawChild(canvas, child, drawingTime);
@@ -35582,6 +35653,9 @@ public class ChatActivity extends BaseFragment implements
         }
 
         if (videoEditedInfo != null && videoEditedInfo.roundVideo) {
+            if (instantCameraView != null) {
+                videoEditedInfo.videoShape = instantCameraView.getVideoShapeForSend();
+            }
             AndroidUtilities.runOnUIThread(closeInstantCameraAnimation = () -> {
                 closeInstantCameraAnimation = null;
                 runCloseInstantCameraAnimation();

@@ -1200,6 +1200,15 @@ public class ChatActivityEnterView extends FrameLayout implements
     private boolean showTooltip;
     private long showTooltipStartTime;
     private float tooltipAlpha;
+    private Runnable onRecordHintShown;
+
+    public void setOnRecordHintShown(Runnable onRecordHintShown) {
+        this.onRecordHintShown = onRecordHintShown;
+    }
+
+    public boolean isRecordHintVisible() {
+        return showTooltip || tooltipAlpha > 0 || controlsView != null && (controlsView.pauseHint != null || controlsView.onceHint != null);
+    }
 
     public class ControlsView extends FrameLayout {
 
@@ -1283,12 +1292,13 @@ public class ChatActivityEnterView extends FrameLayout implements
                 return;
             }
             hideHintView();
-            pauseHint = new HintView2(getContext(), HintView2.DIRECTION_RIGHT);
-            pauseHint.setJoint(1, 0);
+            // Above the pause button, pointing down at it, so it doesn't cover the video shape picker beside it.
+            pauseHint = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM);
+            pauseHint.setJoint(0, 0);
             pauseHint.setMultilineText(true);
             pauseHint.setText(getString(R.string.VoicePauseHint));
             MessagesController.getGlobalMainSettings().edit().putInt("voicepausehint", MessagesController.getGlobalMainSettings().getInt("voicepausehint", 0) + 1).apply();
-            addView(pauseHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 0, 54, 58));
+            addView(pauseHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
             final HintView2 thisHintView = pauseHint;
             pauseHint.setOnHiddenListener(() -> {
                 removeView(thisHintView);
@@ -1297,6 +1307,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             });
             pauseHint.show();
+            if (onRecordHintShown != null) onRecordHintShown.run();
         }
 
         public void showOnceHint() {
@@ -1326,6 +1337,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             });
             onceHint.show();
+            if (onRecordHintShown != null) onRecordHintShown.run();
         }
 
         public void hideHintView() {
@@ -1581,7 +1593,8 @@ public class ChatActivityEnterView extends FrameLayout implements
             pauseRect.set(rectF);
             scale(pauseRect, s);
             if (pauseHint != null) {
-                pauseHint.setJointPx(0, rectF.centerY());
+                pauseHint.setJointPx(0, pauseRect.centerX() - pauseHint.getX() - pauseHint.getPaddingLeft());
+                pauseHint.setTranslationY(pauseRect.top - dp(4) - (pauseHint.getBottom() - pauseHint.getPaddingBottom()));
                 pauseHint.invalidate();
             }
 
@@ -6191,6 +6204,17 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     public boolean isRecordLocked() {
         return recordingAudioVideo && recordCircle.isSendButtonVisible();
+    }
+
+    /** Pauses a locked video message recording like the pause button does, e.g. before a sheet opens over it. */
+    public void pauseVideoRecording() {
+        if (!isRecordLocked() || !isInVideoMode() || delegate.isVideoRecordingPaused()) {
+            return;
+        }
+        if (slideText != null) {
+            slideText.setEnabled(false);
+        }
+        delegate.toggleVideoRecordingPause();
     }
 
     public void cancelRecordingAudioVideo() {
